@@ -1,0 +1,38 @@
+import crypto from 'node:crypto';
+
+export function cors(res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'content-type,x-capture-token');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+}
+export function tokenFrom(req) { return req.headers['x-capture-token'] || req.query?.token || null; }
+export function requireToken(req, res) {
+  const expected = process.env.CAPTURE_TOKEN, provided = tokenFrom(req);
+  if (!expected) { res.status(500).json({ error: 'CAPTURE_TOKEN is not configured.' }); return null; }
+  if (!provided || provided !== expected) { res.status(401).json({ error: 'Unauthorized' }); return null; }
+  return crypto.createHash('sha256').update(provided).digest('hex').slice(0, 24);
+}
+export function dbConfigured() { return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY); }
+
+async function sbFetch(path, options = {}) {
+  const base = process.env.SUPABASE_URL?.replace(/\/$/, ''), key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!base || !key) throw new Error('Supabase is not configured');
+  const res = await fetch(`${base}/rest/v1/${path}`, {
+    ...options,
+    headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: options.prefer || 'return=representation', ...(options.headers || {}) }
+  });
+  if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
+  const text = await res.text(); return text ? JSON.parse(text) : null;
+}
+export async function insert(table, row) { return sbFetch(table, { method: 'POST', body: JSON.stringify(row) }); }
+export async function select(path) { return sbFetch(path, { method: 'GET', prefer: 'return=minimal' }); }
+export async function patch(path, body) { return sbFetch(path, { method: 'PATCH', body: JSON.stringify(body) }); }
+export function bodyOf(req) { if (typeof req.body === 'object' && req.body) return req.body; try { return JSON.parse(req.body || '{}'); } catch { return {}; } }
+export function zoneFor(lat, lng) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return 'Unknown';
+  const zones = [['Downtown Culver',34.0211,-118.3965],['Palms / Venice',34.0228,-118.4200],['Fox Hills',33.9895,-118.3910],['Koreatown',34.0638,-118.3008],['USC',34.0224,-118.2851],['DTLA',34.0467,-118.2500]];
+  let best=['Learning zone',Infinity];
+  for (const [name,zlat,zlng] of zones) { const d=haversine(lat,lng,zlat,zlng); if (d<best[1]) best=[name,d]; }
+  return best[1] <= 2.2 ? best[0] : 'Learning zone';
+}
+function haversine(lat1,lon1,lat2,lon2){const r=3958.8,p1=lat1*Math.PI/180,p2=lat2*Math.PI/180,dp=(lat2-lat1)*Math.PI/180,dl=(lon2-lon1)*Math.PI/180,a=Math.sin(dp/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;return 2*r*Math.asin(Math.sqrt(a));}

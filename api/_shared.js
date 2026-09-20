@@ -37,7 +37,27 @@ async function sbFetch(path, options = {}) {
 export async function insert(table, row) { return sbFetch(table, { method: 'POST', body: JSON.stringify(row) }); }
 export async function select(path) { return sbFetch(path, { method: 'GET', prefer: 'return=minimal' }); }
 export async function patch(path, body) { return sbFetch(path, { method: 'PATCH', body: JSON.stringify(body) }); }
-export function bodyOf(req) { if (typeof req.body === 'object' && req.body) return req.body; try { return JSON.parse(req.body || '{}'); } catch { return {}; } }
+
+export async function bodyOf(req) {
+  const existing = req?.body;
+  if (existing && typeof existing === 'object' && !Buffer.isBuffer(existing) && !(existing instanceof Uint8Array)) return existing;
+  if (typeof existing === 'string') {
+    try { return JSON.parse(existing); } catch { return {}; }
+  }
+  if (Buffer.isBuffer(existing) || existing instanceof Uint8Array) {
+    try { return JSON.parse(Buffer.from(existing).toString('utf8')); } catch { return {}; }
+  }
+  if (!req || typeof req[Symbol.asyncIterator] !== 'function') return {};
+  try {
+    const chunks = [];
+    for await (const chunk of req) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    if (!chunks.length) return {};
+    return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  } catch {
+    return {};
+  }
+}
+
 export function zoneFor(lat, lng) {
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return 'Unknown';
   const zones = [['Downtown Culver',34.0211,-118.3965],['Palms / Venice',34.0228,-118.4200],['Fox Hills',33.9895,-118.3910],['Koreatown',34.0638,-118.3008],['USC',34.0224,-118.2851],['DTLA',34.0467,-118.2500]];

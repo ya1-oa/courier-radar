@@ -37,6 +37,7 @@ async function sbFetch(path, options = {}) {
 export async function insert(table, row) { return sbFetch(table, { method: 'POST', body: JSON.stringify(row) }); }
 export async function select(path) { return sbFetch(path, { method: 'GET', prefer: 'return=minimal' }); }
 export async function patch(path, body) { return sbFetch(path, { method: 'PATCH', body: JSON.stringify(body) }); }
+export async function upsert(table, row, onConflict) { return sbFetch(`${table}${onConflict?`?on_conflict=${encodeURIComponent(onConflict)}`:''}`, { method: 'POST', body: JSON.stringify(row), headers: { Prefer: 'resolution=merge-duplicates,return=representation' } }); }
 
 export async function bodyOf(req) {
   const existing = req?.body;

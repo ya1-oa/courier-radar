@@ -12,14 +12,24 @@ export function requireToken(req, res) {
   if (!provided || provided !== expected) { res.status(401).json({ error: 'Unauthorized' }); return null; }
   return crypto.createHash('sha256').update(provided).digest('hex').slice(0, 24);
 }
-export function dbConfigured() { return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY); }
+function supabaseServerKey() {
+  return process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+}
+export function dbConfigured() { return Boolean(process.env.SUPABASE_URL && supabaseServerKey()); }
 
 async function sbFetch(path, options = {}) {
-  const base = process.env.SUPABASE_URL?.replace(/\/$/, ''), key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const base = process.env.SUPABASE_URL?.replace(/\/$/, ''), key = supabaseServerKey();
   if (!base || !key) throw new Error('Supabase is not configured');
+  const authHeaders = key.startsWith('eyJ') ? { Authorization: `Bearer ${key}` } : {};
   const res = await fetch(`${base}/rest/v1/${path}`, {
     ...options,
-    headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: options.prefer || 'return=representation', ...(options.headers || {}) }
+    headers: {
+      apikey: key,
+      ...authHeaders,
+      'Content-Type': 'application/json',
+      Prefer: options.prefer || 'return=representation',
+      ...(options.headers || {})
+    }
   });
   if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
   const text = await res.text(); return text ? JSON.parse(text) : null;

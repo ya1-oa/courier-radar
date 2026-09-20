@@ -58,6 +58,19 @@ export async function bodyOf(req) {
   }
 }
 
+export function zoneHintFromText(text='') {
+  const value=String(text||'').toLowerCase();
+  const hints=[
+    ['Downtown Culver',/(downtown\s+culver|culver\s+city)/i],
+    ['Palms / Venice',/(\bpalms\b|\bvenice\b)/i],
+    ['Fox Hills',/(fox\s+hills|westfield\s+culver)/i],
+    ['Koreatown',/(koreatown|\bktown\b)/i],
+    ['USC',/(\busc\b|university\s+park)/i],
+    ['DTLA',/(\bdtla\b|downtown\s+los\s+angeles)/i]
+  ];
+  return hints.find(([,re])=>re.test(value))?.[0]||null;
+}
+
 export function zoneFor(lat, lng) {
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return 'Unknown';
   const zones = [['Downtown Culver',34.0211,-118.3965],['Palms / Venice',34.0228,-118.4200],['Fox Hills',33.9895,-118.3910],['Koreatown',34.0638,-118.3008],['USC',34.0224,-118.2851],['DTLA',34.0467,-118.2500]];

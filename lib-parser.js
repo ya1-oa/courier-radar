@@ -40,3 +40,26 @@ export function effectiveOfferRate({ payout, miles, etaMinutes, isShop, itemCoun
   const effectiveMinutes = Math.max(1, rideMinutes + shoppingPenalty + repositionPenalty);
   return { effectiveMinutes: Number(effectiveMinutes.toFixed(1)), dollarsPerHour: Number((payout / effectiveMinutes * 60).toFixed(2)) };
 }
+
+
+export function decisionForOffer({ dollarsPerHour, target = 35, mode = 'normal' }) {
+  const rate = Number(dollarsPerHour);
+  const goal = Math.max(1, Number(target) || 35);
+  if (!Number.isFinite(rate)) return { verdict: 'SKIP', floor: null, borderlineFloor: null, reason: 'missing_rate' };
+
+  // $35/hr is the rolling online-income goal, not a literal per-order minimum.
+  // As the market slows, rejecting an offer carries a larger expected idle-time cost.
+  const takeFactor = mode === 'escape' ? 0.62 : mode === 'slow' ? 0.72 : 0.80;
+  const borderlineFactor = Math.max(0.50, takeFactor - 0.10);
+  const floor = goal * takeFactor;
+  const borderlineFloor = goal * borderlineFactor;
+
+  const verdict = rate >= floor ? 'TAKE' : rate >= borderlineFloor ? 'BORDERLINE' : 'SKIP';
+  return {
+    verdict,
+    floor: Number(floor.toFixed(2)),
+    borderlineFloor: Number(borderlineFloor.toFixed(2)),
+    target: goal,
+    mode
+  };
+}

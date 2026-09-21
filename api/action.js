@@ -12,7 +12,7 @@ export default async function handler(req,res){
   if(!dbConfigured())return res.status(503).json({error:'Supabase is not configured'});
   const body=await bodyOf(req);
   try{
-    const recent=await select(`offers?driver_id=eq.${driverId}&order=captured_at.desc&limit=1&select=id,captured_at,state,vehicle`);
+    const recent=await select(`offers?driver_id=eq.${driverId}&order=captured_at.desc&limit=1&select=id,captured_at,state,vehicle,batch_id,offer_kind,stack_count`);
     if(!recent?.length)return res.status(404).json({error:'No recent offer'});
     const offer=recent[0],requested=String(body.state||body.event||'next').toLowerCase();
     const state=requested==='next'?(NEXT[offer.state]||null):(VALID.has(requested)?requested:null);
@@ -24,7 +24,11 @@ export default async function handler(req,res){
     const marketCell=marketCellFor(lat,lng,vehicle);
     const capturedAt=new Date().toISOString();
     const updated=await patch(`offers?id=eq.${offer.id}&driver_id=eq.${driverId}`,{state});
+    if(offer.batch_id){
+      const batchPatch=state==='delivered'?{state:'completed',completed_at:capturedAt}:{state:state==='accepted'?'active':state};
+      await patch(`batches?id=eq.${offer.batch_id}&driver_id=eq.${driverId}`,batchPatch).catch(()=>null);
+    }
     await insert('offer_events',{offer_id:offer.id,driver_id:driverId,event:state,captured_at:capturedAt,lat:Number.isFinite(lat)?lat:null,lng:Number.isFinite(lng)?lng:null,zone,market_cell:marketCell});
-    return res.status(200).json({ok:true,id:offer.id,previousState:offer.state,state,label:state.replace('_',' ').toUpperCase(),capturedAt,locationRecorded:Boolean(Number.isFinite(lat)&&Number.isFinite(lng)),zone,marketCell,updated});
+    return res.status(200).json({ok:true,id:offer.id,previousState:offer.state,state,label:state.replace('_',' ').toUpperCase(),capturedAt,batchId:offer.batch_id||null,offerKind:offer.offer_kind||'single',stackCount:offer.stack_count||1,locationRecorded:Boolean(Number.isFinite(lat)&&Number.isFinite(lng)),zone,marketCell,updated});
   }catch(error){return res.status(500).json({error:error.message})}
 }

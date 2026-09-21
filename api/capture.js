@@ -17,7 +17,7 @@ export default async function handler(req,res){
         await insert('offer_events',{offer_id:prior[0].id,driver_id:driverId,event:'passed',captured_at:new Date().toISOString(),lat:Number.isFinite(lat)?lat:null,lng:Number.isFinite(lng)?lng:null,zone,market_cell:marketCell});
       }
       let batchId=null;
-      if(parsed.isAddOn && prior?.[0]?.batch_id) batchId=prior[0].batch_id;
+      if(parsed.isAddOn && prior?.[0]?.batch_id && !['delivered','completed','passed','rejected'].includes(prior[0].state)) batchId=prior[0].batch_id;
       if(!batchId){
         const active=await select(`batches?driver_id=eq.${driverId}&state=neq.completed&order=started_at.desc&limit=1&select=id,state,order_count`);
         if(parsed.isAddOn && active?.[0]?.id) batchId=active[0].id;

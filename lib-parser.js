@@ -42,7 +42,7 @@ export function parseOfferText(rawText = '') {
   if (miles != null) confidence += 0.28;
   if (etaMinutes != null) confidence += 0.18;
   if (merchant) confidence += 0.16;
-  return { payout, miles, etaMinutes, merchant, destinationText, isShop, itemCount, confidence: Number(Math.min(confidence, 1).toFixed(2)), rawText: text };
+  return { payout, miles, etaMinutes, merchant, destinationText, isShop, itemCount, isAddOn, stackCount, offerKind, confidence: Number(Math.min(confidence, 1).toFixed(2)), rawText: text };
 }
 
 export function effectiveOfferRate({ payout, miles, etaMinutes, isShop, itemCount, mode = 'normal' }) {

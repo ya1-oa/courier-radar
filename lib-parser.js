@@ -22,6 +22,10 @@ export function parseOfferText(rawText = '') {
   const isShop = /shop\s*&?\s*pay|shopping|\b\d+\s+items?\b/i.test(text);
   const itemMatch = text.match(/\b(\d+)\s+items?\b/i);
   const itemCount = itemMatch ? Number(itemMatch[1]) : null;
+  const isAddOn = /add a delivery|add-on|additional delivery|\\+\\s*\\$[0-9]/i.test(text);
+  const stackMatch = text.match(/\\b(\\d+)\\s+(?:deliveries|orders|stops)\\b/i);
+  const stackCount = stackMatch ? Math.max(1, Number(stackMatch[1])) : 1;
+  const offerKind = isAddOn ? 'addon' : stackCount > 1 ? 'stack' : 'single';
   const isAddressLike = line => /\b\d{2,6}\s+[A-Za-z0-9.' -]+\b(?:st|street|ave|avenue|blvd|boulevard|rd|road|dr|drive|way|ln|lane|ct|court|pl|place|pkwy|parkway|hwy|highway)\b/i.test(line)
     || /\b(?:st|street|ave|avenue|blvd|boulevard|rd|road|dr|drive|way|ln|lane|ct|court|pl|place|pkwy|parkway|hwy|highway)\b.*&|&.*\b(?:st|street|ave|avenue|blvd|boulevard|rd|road|dr|drive|way|ln|lane|ct|court|pl|place|pkwy|parkway|hwy|highway)\b/i.test(line)
     || /\b[A-Za-z .'-]+,\s*(?:Los Angeles|Culver City|Santa Monica|Beverly Hills|West Hollywood)\b/i.test(line);

@@ -19,7 +19,7 @@ export default async function handler(req,res){
     if(!state){
       return res.status(409).json({error:offer.state==='delivered'?'Latest order is already delivered. Capture the next offer first.':`Cannot advance from ${offer.state||'unknown'}`,currentState:offer.state});
     }
-    const lat=Number(body.lat),lng=Number(body.lng),vehicle=normalizeVehicle(body.vehicle||offer.vehicle||'ebike');
+    const coord=v=>{if(v==null||v==='')return NaN;const m=String(v).match(/-?\d+(?:\.\d+)?/);return m?Number(m[0]):NaN};const lat=coord(body.lat??body.latitude??body.Latitude),lng=coord(body.lng??body.lon??body.longitude??body.Longitude),vehicle=normalizeVehicle(body.vehicle||offer.vehicle||'ebike');
     const zone=Number.isFinite(lat)&&Number.isFinite(lng)?zoneFor(lat,lng):null;
     const marketCell=marketCellFor(lat,lng,vehicle);
     const capturedAt=new Date().toISOString();

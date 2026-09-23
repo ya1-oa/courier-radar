@@ -42,3 +42,7 @@ main{padding:0 14px 12px;max-width:520px}.view[data-view="live"].active{height:a
 .home-map-shell #radarMap{display:block!important;position:absolute!important;inset:0!important;width:100%!important;height:100%!important;opacity:1!important;overflow:hidden!important}
 .home-map-shell .maplibregl-map,.home-map-shell .maplibregl-canvas-container,.home-map-shell .maplibregl-canvas{width:100%!important;height:100%!important}
 @media(max-height:760px){.home-map-shell{height:300px}}
+
+/* Operational map/history refinement */
+.home-map-shell{height:440px}.map-legend{display:flex;flex-wrap:wrap;gap:8px 12px;margin:6px 2px 2px;color:#7899aa;font-size:8px}.map-legend span{display:flex;align-items:center;gap:4px}.map-legend i{width:8px;height:8px;border-radius:50%;display:inline-block}.legend-me{background:#a6ff4d}.legend-pickup{background:#00f58a;border:1px solid #d9fff0}.legend-capture{background:#557381}.legend-drop{background:#ffb341}.history-list{display:grid}.history-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 2px;border-top:1px solid #123344}.history-row:first-child{border-top:0}.history-row div{min-width:0}.history-row b{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.history-row small{display:block;color:var(--muted);font-size:9px;margin-top:3px}.history-row strong{color:var(--green);font-size:13px}.merchant-list .merchant-row{border-color:#123344}
+@media(max-height:760px){.home-map-shell{height:360px}}

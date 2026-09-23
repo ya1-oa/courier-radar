@@ -12,7 +12,16 @@ export default async function handler(req,res){
   let saved=null;
   if(dbConfigured()){
     try{
-      const prior=await select(`offers?driver_id=eq.${driverId}&order=captured_at.desc&limit=1&select=id,state,batch_id,offer_kind`);
+      const prior=await select(`offers?driver_id=eq.${driverId}&order=captured_at.desc&limit=1&select=id,state,batch_id,offer_kind,payout,final_payout`);
+      // A newly observed offer while the previous order was already picked up is strong
+      // evidence that Uber considers that trip complete. Close it automatically so
+      // earnings never disappear just because the final Radar Next tap was missed.
+      if(prior?.[0]?.state==='picked_up' && !parsed.isAddOn){
+        const completedAt=new Date().toISOString();
+        await patch(`offers?id=eq.${prior[0].id}&driver_id=eq.${driverId}`,{state:'delivered',final_payout:prior[0].final_payout??prior[0].payout??null});
+        await insert('offer_events',{offer_id:prior[0].id,driver_id:driverId,event:'delivered',captured_at:completedAt,lat:Number.isFinite(lat)?lat:null,lng:Number.isFinite(lng)?lng:null,zone,market_cell:marketCell});
+        if(prior[0].batch_id)await patch(`batches?id=eq.${prior[0].batch_id}&driver_id=eq.${driverId}`,{state:'completed',completed_at:completedAt,final_payout:prior[0].final_payout??prior[0].payout??null}).catch(()=>null);
+      }
       if(prior?.[0]?.state==='observed' && !parsed.isAddOn){
         await patch(`offers?id=eq.${prior[0].id}&driver_id=eq.${driverId}`,{state:'passed'});
         await insert('offer_events',{offer_id:prior[0].id,driver_id:driverId,event:'passed',captured_at:new Date().toISOString(),lat:Number.isFinite(lat)?lat:null,lng:Number.isFinite(lng)?lng:null,zone,market_cell:marketCell});

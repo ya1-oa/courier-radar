@@ -9,6 +9,7 @@
  <div class="summary-box"><b id="todayOnlineRate">$0</b><span>Today $/Online Hr</span><small id="dailyRemaining">— left</small></div>
 </section>
 <section class="block-strip"><div><span id="liveBlockName">CURRENT BLOCK</span><b><i id="blockEarned">$0</i> / <strong id="blockGoal">$0</strong></b></div><div class="block-progress"><i id="blockGoalBar"></i></div><span id="blockPace">Goal pace</span></section>
+<section class="idle-command" id="idleCommand"><div class="idle-copy"><span class="eyebrow">LIVE IDLE</span><b id="idleTimer">00:00</b><small id="idleSince">Available now</small></div><div class="idle-action"><strong id="moveAction">START SHIFT</strong><span id="moveReason">Radar will tell you when to stay, shift nearby, or leave the zone.</span></div></section>
 <section class="queue-section"><div class="section-title"><b id="queueTitle">LATEST CAPTURE</b><span id="advice" class="radar-advice">START SHIFT</span></div>
  <article class="current-order">
   <div class="order-top"><strong id="lastPay">—</strong><span id="lastVerdict" class="pill">—</span></div>
@@ -37,6 +38,7 @@
 <section class="page-title"><div class="eyebrow">STATS</div><h2>Your delivery performance.</h2><p>Today and your rolling Radar history.</p></section>
 <section class="card"><div class="stats"><div><b id="statsTodayEarned">$0</b><span>today earned</span></div><div><b id="statsTodayOrders">0</b><span>orders today</span></div><div><b id="statsTodayRate">$0</b><span>today online/hr</span></div></div></section>
 <section class="card"><div class="section-title"><b>30-DAY RADAR</b></div><div class="stats"><div><b id="completedCount">0</b><span>completed</span></div><div><b id="moneyRateMirror">—</b><span>online/hr</span></div><div><b id="statsTotalEarned">$0</b><span>recorded earned</span></div></div></section>
+<section class="card radar-advantage"><div class="section-title"><b>DID RADAR MAKE ME MONEY?</b><span>estimated counterfactual</span></div><div class="advantage-main"><b id="advantageValue">$0.00</b><span>estimated skip advantage</span></div><div class="stats"><div><b id="advantageEvaluated">0</b><span>skips evaluated</span></div><div><b id="advantageRecord">0–0</b><span>helped – hurt</span></div><div><b id="advantageAverage">$0</b><span>avg / decision</span></div></div><p class="hint">Compares what actually happened after a skip with the estimated payout of taking that rejected offer. It is evidence, not guaranteed causal savings.</p></section>
 <section class="card"><div class="section-title"><b>RESTAURANTS</b><span>pickup intelligence</span></div><div id="merchantStats" class="merchant-list"><p class="hint">Pickup history will appear here.</p></div></section>
 <section class="card"><details><summary>Import Uber earnings CSV</summary><p class="hint">Optional reconciliation tool. Radar does not require an import to work.</p><input id="earningsFile" type="file" accept=".csv,text/csv"><button id="importEarnings" class="ghost full">Import CSV</button><p id="importStatus" class="hint">No import required for captured Radar orders.</p></details></section>
 <b id="radius" class="sr-only">2.5 mi</b>

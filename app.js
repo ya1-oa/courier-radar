@@ -42,11 +42,8 @@ async function refreshData(){
   const settings=await api('/api/settings').catch(()=>null);
   if(settings?.settings){riderSettings={...riderSettings,...settings.settings};saveProfile({target:Number(riderSettings.target_dph||35),vehicle:riderSettings.vehicle||profile().vehicle});renderRiderSettings();}
   const p=profile();
-  const [n,cl]=await Promise.all([
-   api(`/api/network?hours=168&vehicle=${encodeURIComponent(p.vehicle)}&target=${Number(riderSettings.target_dph||p.target)}`).catch(()=>null),
-   api('/api/clusters').catch(()=>null)
-  ]);
-  if(n)network=n;if(cl)clusters=cl.clusters||clusters;
+  const n=await api(`/api/network?hours=168&vehicle=${encodeURIComponent(p.vehicle)}&target=${Number(riderSettings.target_dph||p.target)}`).catch(()=>null);
+  if(n)network=n;
   if(st?.activeShift)saveShift({startedAt:st.activeShift.started_at});else if(shift())saveShift(null);
  }catch(e){console.error('Core Radar refresh failed',e);}
  render();renderStats();renderMap();if(!shift())refreshStartPlan();

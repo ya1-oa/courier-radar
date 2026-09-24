@@ -1,6 +1,6 @@
 import { cors, requireToken, dbConfigured, select, upsert, bodyOf } from './_shared.js';
 
-const defaults={vehicle:'ebike',target_dph:35,speed_low_mph:12,speed_mid_mph:16,speed_high_mph:20,active_speed_level:'high',service_overhead_minutes:4.5};
+const defaults={vehicle:'ebike',target_dph:35,speed_low_mph:12,speed_mid_mph:16,speed_high_mph:20,active_speed_level:'high',service_overhead_minutes:4.5,acceptance_rate_current:null,acceptance_rate_floor:30};
 
 function clean(body={}){
   const vehicle=['ebike','bike','car'].includes(body.vehicle)?body.vehicle:'ebike';
@@ -10,7 +10,7 @@ function clean(body={}){
   const high=Math.max(3,Math.min(40,Number(body.speed_high_mph ?? 20)));
   const level=['low','mid','high'].includes(body.active_speed_level)?body.active_speed_level:'high';
   const overhead=Math.max(0,Math.min(30,Number(body.service_overhead_minutes ?? 4.5)));
-  return {vehicle,target_dph:target,speed_low_mph:low,speed_mid_mph:mid,speed_high_mph:high,active_speed_level:level,service_overhead_minutes:overhead};
+  const arRaw=body.acceptance_rate_current,arCurrent=arRaw==null||arRaw===''?null:Math.max(0,Math.min(100,Number(arRaw))),arFloor=Math.max(0,Math.min(100,Number(body.acceptance_rate_floor ?? 30)));return {vehicle,target_dph:target,speed_low_mph:low,speed_mid_mph:mid,speed_high_mph:high,active_speed_level:level,service_overhead_minutes:overhead,acceptance_rate_current:Number.isFinite(arCurrent)?arCurrent:null,acceptance_rate_floor:arFloor};
 }
 
 export default async function handler(req,res){

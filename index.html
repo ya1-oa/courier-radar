@@ -2,32 +2,44 @@
 <div id="onboarding" class="onboarding hidden"><div class="onboard"><div class="onboard-nav"><button id="backBtn" class="link hidden">Back</button><div id="dots" class="dots"></div><button id="skipBtn" class="link">Skip</button></div><div id="onboardBody" class="onboard-body"></div><button id="nextBtn" class="primary big">Continue</button></div></div>
 <header><div class="brand"><div><h1>Courier Radar</h1><div class="header-online"><span id="blockBadge" class="status-online">● Offline</span><span id="batteryDisplay">48V</span></div></div></div><div class="header-status"><span id="syncStatus" class="sync-dot">SYNC</span><button class="gear-btn" data-tab-jump="plan" aria-label="Settings">⚙</button></div></header>
 <main>
-<div class="view active" data-view="live">
-<section class="dashboard-summary">
- <div class="summary-box"><b id="todayEarned">$0.00</b><span>Today</span><div class="mini-progress"><i id="dailyGoalBar"></i></div><small>Goal <strong id="dailyGoal">$175</strong></small></div>
- <div class="summary-box"><b id="todayOrders">0</b><span>Orders Today</span><small id="serverShiftClock">0:00 online</small></div>
- <div class="summary-box"><b id="todayOnlineRate">$0</b><span>Today $/Online Hr</span><small id="dailyRemaining">— left</small></div>
-</section>
-<section class="block-strip"><div><span id="liveBlockName">CURRENT BLOCK</span><b><i id="blockEarned">$0</i> / <strong id="blockGoal">$0</strong></b></div><div class="block-progress"><i id="blockGoalBar"></i></div><span id="blockPace">Goal pace</span></section>
-<section class="idle-command" id="idleCommand"><div class="idle-copy"><span class="eyebrow">LIVE IDLE</span><b id="idleTimer">00:00</b><small id="idleSince">Available now</small></div><div class="idle-action"><strong id="moveAction">START SHIFT</strong><span id="moveReason">Radar will tell you when to stay, shift nearby, or leave the zone.</span></div></section>
-<section class="queue-section"><div class="section-title"><b id="queueTitle">LATEST CAPTURE</b><span id="advice" class="radar-advice">START SHIFT</span></div>
- <article class="current-order">
-  <div class="order-top"><strong id="lastPay">—</strong><span id="lastVerdict" class="pill">—</span></div>
-  <h2 id="lastMerchant">No offer captured</h2>
-  <div class="order-meta"><span id="lastMiles">—</span><span>•</span><span id="lastEta">—</span></div>
-  <div id="lastOrderType" class="order-type">Waiting for capture</div>
-  <div class="order-economics"><b id="offerDph">—</b><span>est. $/hr</span><b id="offerPerMile">—</b><span>$/mi</span></div>
-  <div id="lastDestination" class="destination-line">Destination unknown</div>
-  <details class="fallback-actions"><summary>Correct capture</summary><div class="actions"><button id="acceptBtn" class="primary">Accepted</button><button id="rejectBtn" class="ghost">Rejected</button></div></details>
- </article>
-</section>
-<section class="home-map-section"><div class="section-title"><b>RADAR MAP <small>LIVE CELLS + CAPTURES</small></b><span id="currentCellLabel">CELL LEARNING</span></div><div class="home-map-shell"><div id="radarMap"></div><div id="homeMapStatus" class="home-map-status">Your cell + learned offer datapoints</div><button id="locateBtn" class="home-locate" aria-label="Locate">⌖</button></div></section>
-<section class="zones-section"><div class="section-title"><b>NEXT BEST ZONES <small>(LIVE)</small></b><span id="confidence">LEARNING</span></div><div id="zoneRankings" class="zone-rankings"><div class="zone-empty">Radar is learning nearby zones.</div></div></section>
-
-<div class="map-legend"><span><i class="legend-me"></i>You</span><span><i class="legend-pickup"></i>Pickup arrival</span><span><i class="legend-capture"></i>Other lifecycle ping</span><span><i class="legend-drop"></i>Destination</span></div><section class="micro-stats"><div><span>IDLE</span><b id="idle">—</b></div><div><span>OFFERS/HR</span><b id="pingsHr">—</b></div><div><span>TAKE</span><b id="takeRate">—</b></div><div><span>ZONE</span><b id="zone">—</b></div></section>
-<div id="reason" class="sr-only"></div><div id="mapStatus" class="sr-only"></div><span id="networkBadge" class="sr-only"></span><b id="blockTitle" class="sr-only"></b><b id="shiftClock" class="sr-only">0:00</b><b id="targetMetric" class="sr-only">$35</b><button id="shiftBtn" class="floating-shift">START SHIFT</button>
+<div class="view active live-map-view" data-view="live">
+ <section class="radar-stage">
+  <div id="radarMap"></div>
+  <div class="live-top-stack">
+   <div class="live-money-bar">
+    <div class="money-primary"><b id="todayEarned">$0.00</b><span>today</span></div>
+    <div><b id="todayOnlineRate">$0</b><span>$/online hr</span></div>
+    <div><b id="todayOrders">0</b><span>orders</span></div>
+    <div class="live-status"><span id="blockBadge" class="status-online">● Offline</span><small id="serverShiftClock">0:00 online</small></div>
+   </div>
+   <div class="idle-command map-idle" id="idleCommand">
+    <div class="idle-copy"><span class="eyebrow">IDLE</span><b id="idleTimer">00:00</b><small id="idleSince">Offline</small></div>
+    <div class="idle-action"><strong id="moveAction">START SHIFT</strong><span id="moveReason">Radar will tell you when to stay or move.</span></div>
+   </div>
+  </div>
+  <button id="locateBtn" class="home-locate" aria-label="Center on me">⌖</button>
+  <div class="map-key" aria-label="Map legend">
+   <span><i class="legend-me"></i>You</span><span><i class="legend-pickup"></i>Pickup</span><span><i class="legend-cluster">3</i>Grouped pickups</span><span><i class="legend-drop"></i>Dropoff</span><span><i class="legend-heat"></i>Demand</span>
+  </div>
+  <div class="live-bottom-stack">
+   <div class="map-recommendation"><div><span class="eyebrow">RADAR</span><strong id="advice">START SHIFT</strong></div><span id="confidence">LEARNING</span></div>
+   <article class="current-order floating-order">
+    <div class="order-top"><div><span id="queueTitle" class="eyebrow">LATEST CAPTURE</span><strong id="lastPay">—</strong></div><span id="lastVerdict" class="pill">—</span></div>
+    <h2 id="lastMerchant">No offer captured</h2>
+    <div class="order-meta"><span id="lastMiles">—</span><span>•</span><span id="lastEta">—</span><span>•</span><span id="offerDph">—</span><span>$/hr</span><span>•</span><span id="offerPerMile">—</span><span>$/mi</span></div>
+    <div id="lastDestination" class="destination-line">Destination unknown</div>
+    <div id="lastOrderType" class="sr-only">Waiting for capture</div>
+    <details class="fallback-actions"><summary>Correct capture</summary><div class="actions"><button id="acceptBtn" class="primary">Accepted</button><button id="rejectBtn" class="ghost">Rejected</button></div></details>
+   </article>
+   <button id="shiftBtn" class="floating-shift">START SHIFT</button>
+  </div>
+  <div class="sr-only">
+   <span id="dailyGoal">$175</span><i id="dailyGoalBar"></i><span id="dailyRemaining">— left</span><span id="liveBlockName">CURRENT BLOCK</span><i id="blockEarned">$0</i><strong id="blockGoal">$0</strong><i id="blockGoalBar"></i><span id="blockPace">Goal pace</span>
+   <span id="currentCellLabel">CELL LEARNING</span><span id="homeMapStatus"></span><div id="zoneRankings"></div><b id="idle">—</b><b id="pingsHr">—</b><b id="takeRate">—</b><b id="zone">—</b>
+   <div id="reason"></div><div id="mapStatus"></div><span id="networkBadge"></span><b id="blockTitle"></b><b id="shiftClock">0:00</b><b id="targetMetric">$35</b><b id="radius">2.5 mi</b>
+  </div>
+ </section>
 </div>
-
 <div class="view" data-view="plan">
 <section class="page-title"><div class="eyebrow">PLAN</div><h2>Make the day deliberate.</h2><p>Targets and rider assumptions stay out of your way while you're working.</p></section>
 <section class="card"><div class="section-head"><div><div class="eyebrow">CURRENT WORK BLOCK</div><h2>Performance</h2></div></div><div class="stats"><div><b id="trueIdle">—</b><span>idle</span></div><div><b id="blockOffers">0</b><span>offers</span></div><div><b id="blockZone">—</b><span>zone</span></div></div></section>

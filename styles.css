@@ -88,3 +88,4 @@ body:has(.live-map-view.active) .radar-stage{height:calc(100dvh - 54px - var(--n
 .live-bottom-stack .floating-shift{min-height:38px;font-size:10px;border-radius:12px}
 .maplibregl-popup-content{font-size:11px}
 @media(max-height:760px){.map-key,.radar-stage .home-locate{top:134px}.map-idle{padding:7px 9px}.live-money-bar{padding:8px 10px}.floating-order{padding:8px 10px}}
+.settings-pair{display:grid;grid-template-columns:1fr 1fr;gap:9px}.settings-pair .field{min-width:0}.settings-pair input{width:100%}

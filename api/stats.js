@@ -42,7 +42,8 @@ export default async function handler(req,res){
   const skipDecisions=[];let radarAdvantage=0,radarWins=0,radarLosses=0,excludedSkips=0;
   for(let i=0;i<signalOffers.length;i++){
     const o=signalOffers[i];if(!['rejected','passed'].includes(o.state)||!(Number(o.payout)>0))continue;
-    const decisionAt=new Date(terminalTime(o)).getTime(),fp=fingerprint(o);
+    const decisionAt=new Date(terminalTime(o)).getTime(),capturedAt=new Date(o.captured_at).getTime(),fp=fingerprint(o),wasEverAccepted=(byOffer.get(o.id)||[]).some(e=>['accepted','arrived','picked_up','delivered','completed'].includes(e.event)),staleCorrection=decisionAt-capturedAt>10*60000;
+    if(wasEverAccepted||staleCorrection){excludedSkips++;continue}
     const duplicateTaken=takenFingerprints.has(fp);
     const nextCapture=signalOffers.find(x=>x.id!==o.id&&new Date(x.captured_at).getTime()>=decisionAt-1500&&new Date(x.captured_at).getTime()<=decisionAt+2500);
     const autoPassed=o.state==='passed'&&Boolean(nextCapture);

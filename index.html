@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"><meta name="theme-color" content="#080b0f"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Courier Radar"><link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/icon.svg"><link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-gl.css"><link rel="stylesheet" href="/styles.css"><title>Courier Radar</title></head><body>
 <div id="onboarding" class="onboarding hidden"><div class="onboard"><div class="onboard-nav"><button id="backBtn" class="link hidden">Back</button><div id="dots" class="dots"></div><button id="skipBtn" class="link">Skip</button></div><div id="onboardBody" class="onboard-body"></div><button id="nextBtn" class="primary big">Continue</button></div></div>
-<header><div class="brand"><div><h1>Courier Radar</h1><div class="header-online"><span id="blockBadge" class="status-online">● Offline</span><span id="batteryDisplay">48V</span></div></div></div><div class="header-status"><span id="syncStatus" class="sync-dot">SYNC</span><button class="gear-btn" data-tab-jump="plan" aria-label="Settings">⚙</button></div></header>
+<header class="app-header"><div class="brand"><h1>Radar</h1><span id="blockBadge" class="status-online">● Offline</span><span id="batteryDisplay" class="battery-chip">48V</span></div><div class="header-status"><span id="syncStatus" class="sync-dot">SYNC</span></div></header>
 <main>
 <div class="view active live-map-view" data-view="live">
  <section class="radar-stage">
@@ -22,7 +22,7 @@
    <span><i class="legend-me"></i>You</span><span><i class="legend-pickup"></i>Pickup</span><span><i class="legend-cluster">3</i>Grouped pickups</span><span><i class="legend-target"></i>Move target</span><span><i class="legend-drop"></i>Dropoff</span><span><i class="legend-heat"></i>Demand</span>
   </div>
   <div class="live-bottom-stack">
-   <div class="map-recommendation"><div><span class="eyebrow">RADAR</span><strong id="advice">START SHIFT</strong></div><span id="confidence">LEARNING</span></div>
+   <div class="map-recommendation"><div><span class="eyebrow">RADAR MOVE</span><strong id="advice">START SHIFT</strong></div><span id="confidence">LEARNING</span></div>
    <article class="current-order floating-order">
     <div class="order-top"><div><span id="queueTitle" class="eyebrow">LATEST CAPTURE</span><strong id="lastPay">—</strong></div><span id="lastVerdict" class="pill">—</span></div>
     <h2 id="lastMerchant">No offer captured</h2>

@@ -12,11 +12,15 @@ export default async function handler(req,res){
   let saved=null;
   if(dbConfigured()){
     try{
-      const prior=await select(`offers?driver_id=eq.${driverId}&order=captured_at.desc&limit=1&select=id,state,batch_id,offer_kind,payout,final_payout`);
+      const prior=await select(`offers?driver_id=eq.${driverId}&order=captured_at.desc&limit=1&select=id,state,batch_id,offer_kind,payout,final_payout,captured_at,merchant,miles`);
       // A newly observed offer while the previous order was already picked up is strong
       // evidence that Uber considers that trip complete. Close it automatically so
       // earnings never disappear just because the final Radar Next tap was missed.
-      if(prior?.[0]?.state==='picked_up' && !parsed.isAddOn){
+      const priorAgeMin=prior?.[0]?.captured_at?(Date.now()-new Date(prior[0].captured_at).getTime())/60000:0;
+      const incomingStack=parsed.isAddOn||parsed.stackCount>1;
+      // A later standalone offer is also strong completion evidence after an ARRIVED
+      // order has been active long enough. Never do this for Uber Delivery (N) stacks/add-ons.
+      if(['picked_up','arrived'].includes(prior?.[0]?.state) && !incomingStack && (prior[0].state==='picked_up'||priorAgeMin>=10)){
         const completedAt=new Date().toISOString();
         await patch(`offers?id=eq.${prior[0].id}&driver_id=eq.${driverId}`,{state:'delivered',final_payout:prior[0].final_payout??prior[0].payout??null});
         await insert('offer_events',{offer_id:prior[0].id,driver_id:driverId,event:'delivered',captured_at:completedAt,lat:Number.isFinite(lat)?lat:null,lng:Number.isFinite(lng)?lng:null,zone,market_cell:marketCell});

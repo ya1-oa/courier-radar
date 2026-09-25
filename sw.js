@@ -1,4 +1,4 @@
-const CACHE='courier-radar-v21';
+const CACHE='courier-radar-v22';
 const STATIC=['/','/styles.css','/app.js','/map.js','/lib-network.js','/manifest.webmanifest','/icon.svg'];
 
 self.addEventListener('install',event=>{

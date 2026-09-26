@@ -2,7 +2,7 @@ import { cors, requireToken, dbConfigured, select, patch, insert, bodyOf, zoneFo
 import { marketCellFor, normalizeVehicle } from '../lib-network.js';
 
 const NEXT={observed:'accepted',accepted:'arrived',arrived:'picked_up',picked_up:'delivered'};
-const VALID=new Set(['accepted','arrived','picked_up','delivered','passed','rejected']);
+const VALID=new Set(['accepted','arrived','picked_up','delivered','passed','rejected','cancelled']);
 
 export default async function handler(req,res){
   cors(res);
@@ -31,7 +31,7 @@ export default async function handler(req,res){
     const capturedAt=new Date().toISOString();
     const offerPatch=state==='dropoff'?{}:{state};if(state==='delivered')offerPatch.final_payout=offer.final_payout??offer.payout??null;const updated=await patch(`offers?id=eq.${offer.id}&driver_id=eq.${driverId}`,offerPatch);
     if(offer.batch_id && state!=='dropoff'){
-      const batchPatch=state==='delivered'?{state:'completed',completed_at:capturedAt}:{state:state==='accepted'?'active':state};
+      const batchPatch=state==='delivered'?{state:'completed',completed_at:capturedAt}:state==='cancelled'?{state:'cancelled'}:{state:state==='accepted'?'active':state};
       await patch(`batches?id=eq.${offer.batch_id}&driver_id=eq.${driverId}`,batchPatch).catch(()=>null);
     }
     await insert('offer_events',{offer_id:offer.id,driver_id:driverId,event:state,captured_at:capturedAt,lat:Number.isFinite(lat)?lat:null,lng:Number.isFinite(lng)?lng:null,zone,market_cell:marketCell});

@@ -143,3 +143,10 @@ body:has(.live-map-view.active) main{padding:0;margin:0;max-width:none}
 .radar-stage.hud-docked .live-money-bar,.radar-stage.hud-docked .start-planner,.radar-stage.hud-docked .map-recommendation,.radar-stage.hud-docked .order-drawer{display:none!important}.radar-stage.hud-docked .live-bottom-stack{left:auto;right:10px;width:138px}.radar-stage.hud-docked .map-key,.radar-stage.hud-docked .home-locate{top:10px}
 .maplibregl-popup-content{font-size:12px}.live-map-view .maplibregl-ctrl-group{display:none}.live-map-view .maplibregl-ctrl-attrib{opacity:.55}
 @media(max-width:390px){.live-money-bar{grid-template-columns:1.3fr 1fr}.live-money-bar>div:nth-child(3){display:none}.map-recommendation strong{font-size:14px}.map-recommendation small{font-size:10px}}
+
+/* v29: keep primary shift action fully above iOS bottom navigation */
+.live-map-view.active .radar-stage{height:calc(100dvh - 54px - var(--nav) - env(safe-area-inset-bottom) - 10px)!important}
+.live-bottom-stack{bottom:18px!important}
+.live-bottom-stack .floating-shift{display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;min-height:54px!important;padding:0 16px!important;line-height:1!important;font-size:16px!important;white-space:nowrap!important;overflow:visible!important}
+.radar-stage.hud-docked .live-bottom-stack{left:10px!important;right:10px!important;width:auto!important}
+.radar-stage.hud-docked .live-bottom-stack .floating-shift{min-width:150px!important;width:auto!important;justify-self:end!important;padding:0 20px!important}

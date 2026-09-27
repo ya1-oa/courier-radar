@@ -84,3 +84,15 @@ This file is append-only. Every major implementation pass must add an entry desc
 - Fixed HUD behavior so JavaScript changes state/ARIA without destroying the authored SVG icon DOM.
 - Recent Vercel deployment history inspected during this pass showed no current failed deployment; the historical Hobby function-count failure remains documented separately.
 - Intelligence v1-v5 remains in place; this pass changes presentation/reliability rather than deleting scoring behavior.
+
+
+## v7 / UI v41 — Motion system + map dependency repair
+**Status: implemented; requires iPhone smoke test**
+
+- Audited the actual v40 iPhone screenshot. It violated the design contract by stacking Scan, Idle and Radar Move simultaneously while offline, leaving effectively no usable map canvas.
+- Offline Home now hides idle/reposition controls; those are contextual shift UI. Default hierarchy is earnings -> scan -> map -> Start Shift.
+- Home now launches expanded instead of force-docked.
+- Added a three-speed native motion system: press micro-interactions, component transitions and spatial/HUD transitions, with reduced-motion support.
+- Added animated tab state, SVG motion, scan signal sweep, shift pulse and Web View Transitions where supported.
+- MapLibre no longer has a single unpkg module point of failure: runtime loader tries jsDelivr then unpkg.
+- Service-worker shell bumped to v41.

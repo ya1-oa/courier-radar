@@ -96,3 +96,13 @@ This file is append-only. Every major implementation pass must add an entry desc
 - Added animated tab state, SVG motion, scan signal sweep, shift pulse and Web View Transitions where supported.
 - MapLibre no longer has a single unpkg module point of failure: runtime loader tries jsDelivr then unpkg.
 - Service-worker shell bumped to v41.
+
+
+## v8 / UI v42 — Generated production motion assets
+**Status: first generated asset family integrated**
+
+- Generated a dedicated YA Creative UI asset atlas and a separate animation-frame sheet rather than relying only on generic SVG/CSS icons.
+- Cropped the SCAN animation into nine optimized WebP production frames and committed them under assets/generated.
+- SCAN now plays those authored frames only while the planner is scanning; idle state holds the first authored frame.
+- This establishes the production asset pipeline: generated atlas -> crop/optimize -> repository assets -> component state animation. Future generated icon families must use the same pipeline rather than introducing unrelated glyph styles.
+- v41 map/motion/default-density fixes were explicitly landed onto main together after detecting that several connector-created commits had not advanced the main ref.

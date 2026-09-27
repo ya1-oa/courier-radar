@@ -79,3 +79,13 @@ body:not(.shift-active) .floating-shift{box-shadow:0 14px 38px rgba(0,0,0,.32)}
 .scan-label{display:block;font-size:9px;letter-spacing:.08em}.planner-refresh{height:58px;display:grid;place-items:center;align-content:center;padding:4px}
 .start-planner[data-state="scanning"] .scan-art{animation:generatedScanFrames 1.08s steps(1,end) infinite;filter:drop-shadow(0 0 13px rgba(85,120,255,.85))}
 @keyframes generatedScanFrames{0%{background-image:url('/assets/generated/scan-0.webp')}11%{background-image:url('/assets/generated/scan-1.webp')}22%{background-image:url('/assets/generated/scan-2.webp')}33%{background-image:url('/assets/generated/scan-3.webp')}44%{background-image:url('/assets/generated/scan-4.webp')}55%{background-image:url('/assets/generated/scan-5.webp')}66%{background-image:url('/assets/generated/scan-6.webp')}77%{background-image:url('/assets/generated/scan-7.webp')}88%,100%{background-image:url('/assets/generated/scan-8.webp')}}
+
+/* v43 generated YA Creative asset system */
+.nav-art{display:block;width:36px;height:38px;margin:0 auto 1px;background-image:url('/assets/generated/nav-sprite.webp');background-repeat:no-repeat;background-size:287.28px 38px;filter:saturate(.78) brightness(.82);transition:filter var(--med) ease,transform var(--med) var(--spring),opacity var(--med) ease}
+.nav-home{background-position:0 0}.nav-history{background-position:-35.91px 0}.nav-stats{background-position:-71.82px 0}.nav-settings{background-position:-107.73px 0}
+.nav-btn.active .nav-home{background-position:-143.64px 0}.nav-btn.active .nav-history{background-position:-179.55px 0}.nav-btn.active .nav-stats{background-position:-215.46px 0}.nav-btn.active .nav-settings{background-position:-251.37px 0}
+.nav-btn.active .nav-art{filter:saturate(1.2) brightness(1.12) drop-shadow(0 0 7px rgba(82,151,255,.48));transform:translateY(-2px) scale(1.04)}
+.nav-btn>span.nav-art{height:38px}.nav-btn svg{display:none}
+.map-art{display:block;width:30px;height:42px;background-image:url('/assets/generated/map-controls-sprite.webp');background-repeat:no-repeat;background-size:205.05px 42px;filter:saturate(.9) brightness(1.08) drop-shadow(0 0 6px rgba(70,145,255,.22));transition:transform var(--med) var(--spring),filter var(--med) ease}
+.map-locate{background-position:0 0}.map-recenter{background-position:-29.29px 0}.map-expand{background-position:-146.45px 0}.hud-toggle[aria-expanded="false"] .map-expand{background-position:-175.74px 0}
+.hud-toggle:hover .map-art,.home-locate:hover .map-art{filter:saturate(1.18) brightness(1.18) drop-shadow(0 0 10px rgba(85,130,255,.5))}

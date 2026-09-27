@@ -44,3 +44,15 @@ This file is append-only. Every major implementation pass must add an entry desc
 - Never claim the persistent merchant catalog is populated until Supabase actually contains rows.
 - Keep serverless function count within Vercel Hobby limits by extending existing endpoints.
 - Append every major future build to this file.
+
+
+## v4 — Arrival hazard + auditable activity forecast
+**Status: implemented in code; estimates intentionally start conservative and improve with Radar exposure**
+
+- Candidate pockets now estimate qualified-offer arrival rate rather than treating raw restaurant density as order demand.
+- Qualified offers use a minimum effective $/hour gate so low-value pings do not falsely make a pocket look productive.
+- Sparse history is smoothed with a prior instead of producing unstable zero/infinite estimates.
+- Every pocket exposes expected wait minutes, probability of a qualified opportunity within five minutes, predicted utilization, qualified-offer count and estimated arrivals per available hour.
+- WHY THIS POCKET surfaces wait, next-five-minute probability and predicted active percentage alongside restaurant and historical evidence.
+- Recommendation audit records now retain these forecast inputs plus the exact WAIT AT restaurant so later outcomes can be compared with the recommendation.
+- v1 map/routing/pocket behavior, v2 persistent merchant database/exact staging target, and v3 utilization-budget relocation remain active.

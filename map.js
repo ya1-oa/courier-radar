@@ -1,4 +1,11 @@
-import * as maplibregl from 'https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-gl.mjs';
+let maplibregl=null;
+async function loadMapLibre(){
+ if(maplibregl)return maplibregl;
+ const sources=['https://cdn.jsdelivr.net/npm/maplibre-gl@6.10.0/+esm','https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-gl.mjs'];
+ let last;
+ for(const src of sources){try{maplibregl=await import(src);return maplibregl}catch(e){last=e;console.warn('Radar map library source failed',src,e)}}
+ throw last||new Error('Map library unavailable');
+}
 
 let map=null;
 let ready=null;
@@ -10,7 +17,7 @@ const escapeHtml=(value='')=>String(value).replace(/[&<>"']/g,m=>({'&':'&amp;','
 
 export function initRadarMap(){
  if(ready)return ready;
- ready=new Promise((resolve,reject)=>{
+ ready=(async()=>{await loadMapLibre();return new Promise((resolve,reject)=>{
   try{
    const container=document.getElementById('radarMap');
    if(!container)throw new Error('radarMap container missing');
@@ -54,7 +61,7 @@ export function initRadarMap(){
    });
    map.on('error',event=>{const message=event?.error?.message||'';if(message&&!message.includes('404'))console.warn('Map error:',message)});
   }catch(error){ready=null;reject(error)}
- });
+ });})().catch(error=>{ready=null;const el=document.getElementById('radarMap');if(el)el.dataset.mapError='true';throw error});
  return ready;
 }
 

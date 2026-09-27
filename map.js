@@ -30,6 +30,11 @@ export function initRadarMap(){
     map.addLayer({id:'pickup-clusters',type:'circle',source:'radar-pickups',filter:['has','point_count'],paint:{'circle-color':'#00dca0','circle-radius':['step',['get','point_count'],14,4,18,10,22,25,27],'circle-opacity':.92,'circle-stroke-color':'#d9fff3','circle-stroke-width':1.5}});
     map.addLayer({id:'pickup-cluster-count',type:'symbol',source:'radar-pickups',filter:['has','point_count'],layout:{'text-field':['get','point_count_abbreviated'],'text-size':11},paint:{'text-color':'#001d16'}});
     map.addLayer({id:'pickup-dot',type:'circle',source:'radar-pickups',filter:['!',['has','point_count']],paint:{'circle-radius':7,'circle-color':'#00f58a','circle-opacity':.95,'circle-stroke-color':'#e4fff5','circle-stroke-width':1.5}});
+    map.addSource('radar-restaurants',{type:'geojson',data:fc(),cluster:true,clusterMaxZoom:16,clusterRadius:26});
+    map.addLayer({id:'restaurant-clusters',type:'circle',source:'radar-restaurants',filter:['has','point_count'],paint:{'circle-color':'#00bfff','circle-radius':['step',['get','point_count'],10,10,14,30,18],'circle-opacity':.72}});
+    map.addLayer({id:'restaurant-count',type:'symbol',source:'radar-restaurants',filter:['has','point_count'],layout:{'text-field':['get','point_count_abbreviated'],'text-size':9},paint:{'text-color':'#fff'}});
+    map.addLayer({id:'restaurant-dot',type:'circle',source:'radar-restaurants',filter:['!',['has','point_count']],paint:{'circle-radius':4,'circle-color':'#00bfff','circle-opacity':.78,'circle-stroke-color':'#03111b','circle-stroke-width':1}});
+    map.on('click','restaurant-dot',e=>{const f=e.features?.[0];if(!f)return;const p=f.properties||{};new maplibregl.Popup({closeButton:false,offset:8}).setLngLat(e.lngLat).setHTML(`<div class="radar-popup"><b>${escapeHtml(p.name||'Restaurant')}</b><div>${escapeHtml(p.amenity||'food')} · Culver merchant inventory</div></div>`).addTo(map)});
     for(const name of ['radar-user','radar-destination','radar-target','radar-route'])map.addSource(name,{type:'geojson',data:fc()});
     map.addLayer({id:'radar-user-halo',type:'circle',source:'radar-user',paint:{'circle-radius':18,'circle-color':'#147cff','circle-opacity':.18}});
     map.addLayer({id:'radar-user-dot',type:'circle',source:'radar-user',paint:{'circle-radius':7,'circle-color':'#147cff','circle-stroke-color':'#fff','circle-stroke-width':2.5}});
@@ -51,9 +56,11 @@ export function initRadarMap(){
  return ready;
 }
 
-export async function updateRadarMap({features=[],position=null,destination=null,target=null,history=[],fit=false}={}){
+export async function updateRadarMap({features=[],position=null,destination=null,target=null,history=[],restaurants=[],fit=false}={}){
  await initRadarMap();
  map.getSource('radar-cells')?.setData(fc(features));
+ const restaurantFeatures=(restaurants||[]).filter(validPoint).map(r=>({type:'Feature',properties:{name:r.name||'Restaurant',amenity:r.amenity||'food'},geometry:{type:'Point',coordinates:[Number(r.lng),Number(r.lat)]}}));
+ map.getSource('radar-restaurants')?.setData(fc(restaurantFeatures));
  const pickups=(history||[]).filter(p=>p.event==='arrived'&&Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng))).map(p=>({type:'Feature',properties:{zone:p.zone||'',merchant:p.merchant||'',payout:p.payout||null},geometry:{type:'Point',coordinates:[Number(p.lng),Number(p.lat)]}}));
  map.getSource('radar-pickups')?.setData(fc(pickups));
  map.getSource('radar-user')?.setData(validPoint(position)?fc([{type:'Feature',properties:{},geometry:{type:'Point',coordinates:[Number(position.lng),Number(position.lat)]}}]):fc());

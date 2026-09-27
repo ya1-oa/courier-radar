@@ -28,3 +28,10 @@ v40 changes:
 
 ## Deployment audit
 The recent Vercel deployment pages inspected during v40 contained no failed deployment. The known historical v19 failure was the Vercel Hobby serverless-function-count limit; it remains an architectural constraint but did not cause this map regression.
+
+
+## v44 shell-state guard
+- HUD expand/collapse may only toggle classes and aria-expanded. Never assign textContent to the HUD button because that deletes the generated map-art span.
+- The live map now launches expanded; docking is an explicit rider action rather than the default state.
+- Production generated assets are part of the service-worker shell cache so installed iPhone PWAs do not mix new DOM/CSS with stale icon frames.
+- v44 also repaired the planner function boundary found during integration; a malformed refreshLearning/refreshStartPlan seam could prevent application JavaScript from parsing and therefore make the map appear broken even when MapLibre itself was healthy.

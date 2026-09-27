@@ -46,3 +46,15 @@ Priority: Radar/Supabase ground truth; BestTime restaurant activity; event intel
 - Restaurant target ranking combines time-block fit, centrality within the pocket, observed Radar offers/completions/payout evidence, external activity signals and travel cost.
 - The specific restaurant recommendation is an operational waiting location, not a claim that the next Uber order will come from that merchant.
 - Pocket recommendation remains primary; restaurant target is the best staging point inside that pocket and may change by time block or learned dispatch behavior.
+
+
+## Implementation discipline
+- BUILD_HISTORY.md is append-only and must be updated with every major implementation pass.
+- v1 and v2 are implementation requirements, not historical ideas: future changes must preserve their working behavior.
+- Major version work should land as a coherent vertical slice (data, scoring, UI/map, persistence/fallback, and documentation where applicable), not cosmetic version bumps.
+
+## v3 implemented architecture
+- Persist OSM merchant discovery into Supabase and use the persisted catalog as runtime fallback.
+- Rank a specific WAIT AT merchant inside each candidate pocket using gateway centrality, time-block fit, observed offers/completions and payout history.
+- Replace legacy 8/15-minute relocation thresholds with the utilization budget derived from the 80% activity target.
+- Surface whether restaurant intelligence came from live OSM discovery or the persistent database cache.

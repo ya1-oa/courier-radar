@@ -63,3 +63,12 @@ Motion is part of hierarchy, not decoration.
 - Shift start/end states share one control silhouette: blue/play while offline, red/stop while live. State color is semantic and motion remains restrained.
 - Online/offline indicators use a dedicated LED plus label; never encode state only in a Unicode bullet.
 - Generated raster art is paired with CSS geometry/motion where the artwork itself does not change. This keeps Retina rendering sharp and avoids unnecessary frame assets.
+
+
+## v45 interaction contract
+- Primary navigation changes are spatial: the incoming destination swipes across the viewport horizontally rather than drifting upward.
+- Primary shift controls use restrained periodic shine/bloom plus spring press feedback; selected navigation art pops once on selection.
+- SCAN has four explicit states: idle, scanning, complete, error. Scanning uses a rotating radar sweep and expanding signal wave; complete resolves to a green confirmation state before returning to ready.
+- Haptics are progressive enhancement only. navigator.vibrate is invoked where supported; iOS Safari/PWA may ignore the Web Vibration API, so visual feedback must remain complete without it.
+- Background intelligence refreshes must never overwrite a visible recommendation with a transient scanning message. Only an explicit rider scan exposes SCANNING.
+- Rider-facing staging copy names the exact WAIT AT merchant when one exists. Internal inventory/debug vocabulary must not appear in the map UI.

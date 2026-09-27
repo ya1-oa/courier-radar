@@ -55,3 +55,11 @@ Motion is part of hierarchy, not decoration.
 - Active/inactive variants must come from the same authored sheet so silhouette, lighting, depth and glow remain consistent.
 - Animated controls require authored frame sequences or deliberately composed transforms of authored assets. Animation must communicate state.
 - Source asset-sheet crops are production art, not inspiration references: do not redraw them with arbitrary SVGs during later UI work.
+
+
+## Production state integration
+- Authored control DOM is persistent. Runtime state must update labels, ARIA attributes and classes without replacing the generated art nodes with textContent.
+- SCAN uses the nine-frame authored sequence and a separate text label. The generated art node must survive loading, success and retry states.
+- Shift start/end states share one control silhouette: blue/play while offline, red/stop while live. State color is semantic and motion remains restrained.
+- Online/offline indicators use a dedicated LED plus label; never encode state only in a Unicode bullet.
+- Generated raster art is paired with CSS geometry/motion where the artwork itself does not change. This keeps Retina rendering sharp and avoids unnecessary frame assets.

@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"><meta name="theme-color" content="#080b0f"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Courier Radar"><link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/icon.svg"><link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-gl.css"><link rel="stylesheet" href="/styles.css"><title>Courier Radar</title></head><body>
 <div id="onboarding" class="onboarding hidden"><div class="onboard"><div class="onboard-nav"><button id="backBtn" class="link hidden">Back</button><div id="dots" class="dots"></div><button id="skipBtn" class="link">Skip</button></div><div id="onboardBody" class="onboard-body"></div><button id="nextBtn" class="primary big">Continue</button></div></div>
-<header class="app-header"><div class="brand"><h1>Radar</h1><span id="blockBadge" class="status-online">● Offline</span><span id="batteryDisplay" class="battery-chip">48V</span></div><div class="header-status"><span id="syncStatus" class="sync-dot">SYNC</span></div></header>
+<header class="app-header"><div class="brand"><h1>Radar</h1><span id="blockBadge" class="status-online"><i class="status-led" aria-hidden="true"></i><span class="status-label">Offline</span></span><span id="batteryDisplay" class="battery-chip">48V</span></div><div class="header-status"><span id="syncStatus" class="sync-dot">SYNC</span></div></header>
 <main>
 <div class="view active live-map-view" data-view="live">
  <section class="radar-stage">
@@ -12,7 +12,7 @@
     <div><b id="activityRate">—</b><span>Active · target 80%</span></div>
     <div><b id="idleBudget">4:23</b><span>Idle budget</span></div>
    </div>
-   <section id="startPlanner" class="start-planner home-sheet"><div><span id="startPlanType" class="eyebrow">CULVER INTELLIGENCE</span><strong id="startPlanTitle">Tap SCAN to rank restaurant pockets</strong><span id="startPlanReason">Radar will show why it chose a pocket and keep the choice pinned.</span><div id="scanProviders" class="scan-providers">OSM · BestTime — · Events —</div></div><button id="startPlanRefresh" class="planner-refresh scan-btn" aria-label="Scan Culver restaurant pockets">SCAN</button></section>
+   <section id="startPlanner" class="start-planner home-sheet"><div><span id="startPlanType" class="eyebrow">CULVER INTELLIGENCE</span><strong id="startPlanTitle">Tap SCAN to rank restaurant pockets</strong><span id="startPlanReason">Radar will show why it chose a pocket and keep the choice pinned.</span><div id="scanProviders" class="scan-providers">OSM · BestTime — · Events —</div></div><button id="startPlanRefresh" class="planner-refresh scan-btn" aria-label="Scan Culver restaurant pockets"><span class="scan-art" aria-hidden="true"></span><span class="scan-label">SCAN</span></button></section>
    <div class="idle-command map-idle contextual-ui" id="idleCommand">
     <div class="idle-copy"><span class="eyebrow">IDLE</span><b id="idleTimer">00:00</b><small id="idleSince">Offline</small></div>
     <div class="idle-action"><strong id="moveAction">START SHIFT</strong><span id="moveReason">Radar will tell you when to stay or move.</span></div>
@@ -30,7 +30,7 @@
     <div id="lastOrderType" class="sr-only">Waiting for capture</div><div id="zonePicker" class="zone-picker hidden"></div><section id="pocketWhy" class="pocket-why hidden"><div class="eyebrow">WHY THIS POCKET?</div><strong id="pocketWhyTitle">—</strong><div id="pocketWhyEvidence"></div></section>
     <details class="fallback-actions"><summary>Order controls</summary><div class="actions"><button id="acceptBtn" class="primary">Accepted</button><button id="rejectBtn" class="ghost">Rejected</button><button id="cancelOrderBtn" class="cancel-order-btn" type="button">Cancel order</button></div></details>
    </div></details>
-   <button id="shiftBtn" class="floating-shift"><span class="shift-pulse"></span><span>START SHIFT</span></button>
+   <button id="shiftBtn" class="floating-shift"><span class="shift-pulse" aria-hidden="true"></span><span class="shift-action-icon" aria-hidden="true"></span><span class="shift-label">START SHIFT</span></button>
   </div>
   <div class="sr-only">
    <span id="dailyGoal">$175</span><i id="dailyGoalBar"></i><span id="dailyRemaining">— left</span><span id="liveBlockName">CURRENT BLOCK</span><i id="blockEarned">$0</i><strong id="blockGoal">$0</strong><i id="blockGoalBar"></i><span id="blockPace">Goal pace</span>

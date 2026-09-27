@@ -116,3 +116,23 @@ This file is append-only. Every major implementation pass must add an entry desc
 - Replaced locate and HUD expand/collapse controls with crops from the same generated map-control family.
 - Existing generated nine-frame SCAN animation remains the authored animated control.
 - DESIGN_SYSTEM.md now forbids silently redrawing generated production assets as unrelated SVG/glyph replacements.
+
+
+## v10 / UI v44 — Production control integration + planner parse repair
+**Status: implemented on integration branch; deployment/on-device verification pending**
+
+- Converted SCAN from disposable button text into persistent authored art + label DOM, so loading state no longer destroys the generated nine-frame control.
+- Converted shift and online/offline controls to persistent semantic state nodes, matching the production sheet language: blue/play start, red/stop end, dedicated online LED.
+- HUD expand/collapse now changes classes and aria-expanded only; it no longer replaces the generated map-control artwork with text glyphs.
+- Home map launches expanded so the map remains the primary environment rather than beginning in a collapsed shell.
+- Service-worker cache advanced to v44 and now explicitly pre-caches the generated navigation, map-control and SCAN assets.
+- During the pass, found and repaired a malformed refreshLearning -> refreshStartPlan seam in app.js. This was a JavaScript parse/runtime blocker capable of making the map look broken independently of MapLibre loading.
+- Existing v1-v5 intelligence and v40-v43 design/map invariants remain intact.
+- Remaining gate: merge/deploy, confirm Vercel READY, then perform the required iPhone map/shift/scan smoke test.
+
+
+### v44.1 visual QA correction
+- iPhone QA rejected the initial raster integration: sprite crops visibly contained source-sheet labels/backgrounds and were not production assets.
+- Removed runtime dependence on those sheet-crop sprites and scan frames. Navigation, map actions, scan, status and shift controls are now reconstructed as clean CSS/vector-like primitives based on the approved reference language.
+- PWA cache advanced to v44-1 and no longer pre-caches rejected generated crop assets.
+- This correction is intentionally still on the integration branch. Production merge remains gated on preview + iPhone visual/map QA.

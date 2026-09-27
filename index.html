@@ -9,10 +9,10 @@
    <div class="live-money-bar">
     <div class="money-primary"><b id="todayEarned">$0.00</b><span>Today</span></div>
     <div><b id="todayOnlineRate">$0</b><span>Per online hr</span></div>
-    <div><b id="serverShiftClock">0h 00m</b><span>Online today</span></div>
-    <div><b id="todayOrders">0</b><span>Orders</span></div>
+    <div><b id="activityRate">—</b><span>Active · target 80%</span></div>
+    <div><b id="idleBudget">4:23</b><span>Idle budget</span></div>
    </div>
-   <section id="startPlanner" class="start-planner hidden"><div><span id="startPlanType" class="eyebrow">SCANNING ZONES</span><strong id="startPlanTitle">Finding your best start…</strong><span id="startPlanReason">Combining Radar history with external restaurant density.</span></div><button id="startPlanRefresh" class="planner-refresh" aria-label="Refresh start recommendation">↻</button></section>
+   <section id="startPlanner" class="start-planner"><div><span id="startPlanType" class="eyebrow">CULVER INTELLIGENCE</span><strong id="startPlanTitle">Tap SCAN to rank restaurant pockets</strong><span id="startPlanReason">Radar will show why it chose a pocket and keep the choice pinned.</span><div id="scanProviders" class="scan-providers">OSM · BestTime — · Events —</div></div><button id="startPlanRefresh" class="planner-refresh scan-btn" aria-label="Scan Culver restaurant pockets">SCAN</button></section>
    <div class="idle-command map-idle" id="idleCommand">
     <div class="idle-copy"><span class="eyebrow">IDLE</span><b id="idleTimer">00:00</b><small id="idleSince">Offline</small></div>
     <div class="idle-action"><strong id="moveAction">START SHIFT</strong><span id="moveReason">Radar will tell you when to stay or move.</span></div>
@@ -27,7 +27,7 @@
     <h2 id="lastMerchant">No offer captured</h2>
     <div class="order-meta"><span id="lastMiles">—</span><span>•</span><span id="lastEta">—</span><span>•</span><span id="offerDph">—</span><span>$/hr</span><span>•</span><span id="offerPerMile">—</span><span>$/mi</span></div>
     <div id="lastDestination" class="destination-line">Destination unknown</div>
-    <div id="lastOrderType" class="sr-only">Waiting for capture</div><div id="zonePicker" class="zone-picker hidden"></div>
+    <div id="lastOrderType" class="sr-only">Waiting for capture</div><div id="zonePicker" class="zone-picker hidden"></div><section id="pocketWhy" class="pocket-why hidden"><div class="eyebrow">WHY THIS POCKET?</div><strong id="pocketWhyTitle">—</strong><div id="pocketWhyEvidence"></div></section>
     <details class="fallback-actions"><summary>Order controls</summary><div class="actions"><button id="acceptBtn" class="primary">Accepted</button><button id="rejectBtn" class="ghost">Rejected</button><button id="cancelOrderBtn" class="cancel-order-btn" type="button">Cancel order</button></div></details>
    </div></details>
    <button id="shiftBtn" class="floating-shift">START SHIFT</button>

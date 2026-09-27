@@ -106,3 +106,13 @@ This file is append-only. Every major implementation pass must add an entry desc
 - SCAN now plays those authored frames only while the planner is scanning; idle state holds the first authored frame.
 - This establishes the production asset pipeline: generated atlas -> crop/optimize -> repository assets -> component state animation. Future generated icon families must use the same pipeline rather than introducing unrelated glyph styles.
 - v41 map/motion/default-density fixes were explicitly landed onto main together after detecting that several connector-created commits had not advanced the main ref.
+
+
+## v9 / UI v43 — Generated icon family becomes canonical
+**Status: implemented**
+
+- Committed generated YA Creative navigation and map-control raster sprite assets under assets/generated.
+- Replaced bottom-navigation generic SVGs with crops from the generated default/active icon family.
+- Replaced locate and HUD expand/collapse controls with crops from the same generated map-control family.
+- Existing generated nine-frame SCAN animation remains the authored animated control.
+- DESIGN_SYSTEM.md now forbids silently redrawing generated production assets as unrelated SVG/glyph replacements.

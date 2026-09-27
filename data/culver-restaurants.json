@@ -1,0 +1,140 @@
+{
+  "version": 1,
+  "market": "Culver City",
+  "generated": "2026-09-26",
+  "sources": [
+    "OpenStreetMap live scan",
+    "Downtown Culver City Business Association",
+    "Platform",
+    "Helms Design District",
+    "Westfield Culver City"
+  ],
+  "pockets": [
+    {
+      "id": "downtown_culver",
+      "name": "Downtown Culver / Culver Steps",
+      "center": [
+        34.0211,
+        -118.3965
+      ],
+      "radius_m": 850
+    },
+    {
+      "id": "platform",
+      "name": "Platform / Washington",
+      "center": [
+        34.0282,
+        -118.388
+      ],
+      "radius_m": 650
+    },
+    {
+      "id": "helms",
+      "name": "Helms Bakery District",
+      "center": [
+        34.0303,
+        -118.38487
+      ],
+      "radius_m": 600
+    },
+    {
+      "id": "overland",
+      "name": "Overland / Culver",
+      "center": [
+        34.0167,
+        -118.4009
+      ],
+      "radius_m": 650
+    },
+    {
+      "id": "fox_hills",
+      "name": "Fox Hills / Westfield",
+      "center": [
+        33.9858,
+        -118.394
+      ],
+      "radius_m": 900
+    }
+  ],
+  "anchors": [
+    {
+      "name": "Laurel Grill",
+      "address": "9300 Culver Blvd Ste 210, Culver City, CA 90232",
+      "pocket": "downtown_culver",
+      "delivery": false,
+      "source": "local_business"
+    },
+    {
+      "name": "Meet in Paris French Bistro",
+      "address": "9727 Culver Blvd, Culver City, CA 90232",
+      "pocket": "downtown_culver",
+      "delivery": true,
+      "source": "local_business"
+    },
+    {
+      "name": "LOQUI",
+      "address": "8830 Washington Blvd #104, Culver City, CA 90232",
+      "pocket": "platform",
+      "delivery": true,
+      "source": "local_business"
+    },
+    {
+      "name": "Bianca",
+      "address": "8820 Washington Blvd #103, Culver City, CA 90232",
+      "pocket": "platform",
+      "source": "platform"
+    },
+    {
+      "name": "Pasta Sisters",
+      "address": "3280 Helms Ave, Culver City, CA 90232",
+      "pocket": "helms",
+      "delivery": true,
+      "source": "local_business"
+    },
+    {
+      "name": "Father's Office",
+      "address": "Helms Design District, Culver City, CA",
+      "pocket": "helms",
+      "source": "helms"
+    },
+    {
+      "name": "Folks Pizzeria",
+      "address": "Helms Design District, Culver City, CA",
+      "pocket": "helms",
+      "source": "helms"
+    },
+    {
+      "name": "Hayama by WATAMI",
+      "address": "Helms Design District, Culver City, CA",
+      "pocket": "helms",
+      "source": "helms"
+    },
+    {
+      "name": "Pampas Grill",
+      "address": "3857 Overland Ave, Culver City, CA 90232",
+      "pocket": "overland",
+      "delivery": true,
+      "source": "local_business"
+    },
+    {
+      "name": "Johnnie's Pastrami",
+      "address": "4017 Sepulveda Blvd, Culver City, CA 90230",
+      "pocket": "overland",
+      "delivery": true,
+      "source": "local_business"
+    }
+  ],
+  "liveDiscovery": {
+    "provider": "OpenStreetMap Overpass",
+    "bboxRadiusMiles": 6.5,
+    "amenities": [
+      "restaurant",
+      "fast_food",
+      "cafe",
+      "food_court",
+      "bar",
+      "pub"
+    ],
+    "persistRecommended": true
+  }
+}

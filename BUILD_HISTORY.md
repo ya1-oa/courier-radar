@@ -69,3 +69,18 @@ This file is append-only. Every major implementation pass must add an entry desc
 - This closes the prediction -> action -> observed outcome -> calibration dataset loop without inventing causality from unevaluated recommendations.
 - Existing skip-counterfactual Radar Advantage remains a separate metric: it estimates money gained/lost from SKIP decisions, while recommendation opportunity-profit measures post-reposition/zone recommendations.
 - v1-v4 invariants remain required.
+
+
+## v6 / UI v40 — Native shell + map reliability reset
+**Status: implemented; on-device smoke test required**
+
+- Replaced years-of-patch style accumulation with a single tokenized YA Creative design system.
+- Rebuilt the live screen around a fixed native-style map viewport, disciplined glass HUD surfaces, consistent 48px controls, iOS safe areas and a four-destination floating tab bar.
+- Replaced generic Unicode navigation/location/map glyphs with custom authored SVG line icons.
+- Added DESIGN_SYSTEM.md as the canonical component, spacing, icon and CSS maintenance contract.
+- Added MAP_RELIABILITY.md documenting the map regression causes and required invariants.
+- Added ResizeObserver-based MapLibre canvas sizing so iOS viewport/HUD changes resize the WebGL canvas from actual container geometry.
+- Bumped the service-worker shell from v33 to v40 to invalidate stale installed-PWA assets.
+- Fixed HUD behavior so JavaScript changes state/ARIA without destroying the authored SVG icon DOM.
+- Recent Vercel deployment history inspected during this pass showed no current failed deployment; the historical Hobby function-count failure remains documented separately.
+- Intelligence v1-v5 remains in place; this pass changes presentation/reliability rather than deleting scoring behavior.

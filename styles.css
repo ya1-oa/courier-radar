@@ -73,3 +73,9 @@ body:not(.shift-active) .floating-shift{box-shadow:0 14px 38px rgba(0,0,0,.32)}
 .radar-stage.hud-docked .hud-toggle svg{transform:rotate(180deg)}
 .hud-toggle svg{transition:transform var(--med) var(--spring)}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
+
+/* Generated YA Creative scan-frame asset */
+.scan-art{display:block;width:30px;height:30px;margin:0 auto 2px;background:center/contain no-repeat url('/assets/generated/scan-0.webp');filter:drop-shadow(0 0 8px rgba(70,145,255,.5));transition:transform var(--fast) var(--spring),filter var(--med) ease}
+.scan-label{display:block;font-size:9px;letter-spacing:.08em}.planner-refresh{height:58px;display:grid;place-items:center;align-content:center;padding:4px}
+.start-planner[data-state="scanning"] .scan-art{animation:generatedScanFrames 1.08s steps(1,end) infinite;filter:drop-shadow(0 0 13px rgba(85,120,255,.85))}
+@keyframes generatedScanFrames{0%{background-image:url('/assets/generated/scan-0.webp')}11%{background-image:url('/assets/generated/scan-1.webp')}22%{background-image:url('/assets/generated/scan-2.webp')}33%{background-image:url('/assets/generated/scan-3.webp')}44%{background-image:url('/assets/generated/scan-4.webp')}55%{background-image:url('/assets/generated/scan-5.webp')}66%{background-image:url('/assets/generated/scan-6.webp')}77%{background-image:url('/assets/generated/scan-7.webp')}88%,100%{background-image:url('/assets/generated/scan-8.webp')}}

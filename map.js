@@ -2,7 +2,7 @@ import * as maplibregl from 'https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
 
 let map=null;
 let ready=null;
-let centeredOnce=false;
+let centeredOnce=false;let resizeObserver=null;
 const DEFAULT_CENTER=[-118.3965,34.0211];
 const fc=(features=[])=>({type:'FeatureCollection',features});
 const validPoint=p=>p&&Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng));
@@ -48,6 +48,8 @@ export function initRadarMap(){
     map.on('click','pickup-dot',e=>{const feature=e.features?.[0];if(!feature)return;const p=feature.properties||{};new maplibregl.Popup({closeButton:false,offset:10}).setLngLat(e.lngLat).setHTML(`<div class="radar-popup"><b>${escapeHtml(p.merchant||'Pickup')}</b><div>Pickup arrival${p.payout?` · $${Number(p.payout).toFixed(2)}`:''}</div><div>${escapeHtml(p.zone||'')}</div></div>`).addTo(map)});
     map.on('click','radar-cells-fill',e=>{const feature=e.features?.[0];if(!feature)return;const p=feature.properties||{};const dph=p.onlineDph!=null?` · $${Number(p.onlineDph).toFixed(0)}/hr`:'';new maplibregl.Popup({closeButton:false,offset:8}).setLngLat(e.lngLat).setHTML(`<div class="radar-popup"><b>${escapeHtml(p.label||p.zone||'Demand cell')}</b><div>${escapeHtml(p.heat||'LEARNING')} · ${p.offers??0} offers</div><div>${p.offersPerOnlineHour??'—'} observed offers/hr${dph} · ${Math.round(Number(p.confidence||0)*100)}% confidence</div>${p.merchants?`<div>${escapeHtml(p.merchants)}</div>`:''}</div>`).addTo(map)});
     map.resize();
+    if('ResizeObserver'in window){resizeObserver?.disconnect();resizeObserver=new ResizeObserver(()=>map?.resize());resizeObserver.observe(container)}
+    requestAnimationFrame(()=>map?.resize());setTimeout(()=>map?.resize(),250);
     resolve(map);
    });
    map.on('error',event=>{const message=event?.error?.message||'';if(message&&!message.includes('404'))console.warn('Map error:',message)});

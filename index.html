@@ -5,7 +5,7 @@
 <div class="view active live-map-view" data-view="live">
  <section class="radar-stage">
   <div id="radarMap"></div>
-  <div class="live-top-stack"><button id="hudToggle" class="hud-toggle" type="button" aria-label="Show or hide map controls">⌄</button>
+  <div class="live-top-stack"><button id="hudToggle" class="hud-toggle" type="button" aria-label="Show or hide map controls"><svg viewBox="0 0 24 24"><path d="M5 8.5 12 15l7-6.5"/><path d="M8 5.5h8"/></svg></button>
    <div class="live-money-bar">
     <div class="money-primary"><b id="todayEarned">$0.00</b><span>Today</span></div>
     <div><b id="todayOnlineRate">$0</b><span>Per online hr</span></div>
@@ -18,10 +18,10 @@
     <div class="idle-action"><strong id="moveAction">START SHIFT</strong><span id="moveReason">Radar will tell you when to stay or move.</span></div>
    </div>
   </div>
-  <button id="locateBtn" class="home-locate" aria-label="Center on me">⌖</button>
+  <button id="locateBtn" class="home-locate" aria-label="Center on me"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="9"/></svg></button>
   <details class="map-key" aria-label="Map legend"><summary>Map key</summary><div class="map-key-items"><span><i class="legend-me"></i>You</span><span><i class="legend-pickup"></i>Pickup</span><span><i class="legend-cluster">3</i>Grouped</span><span><i class="legend-target"></i>Move target</span><span><i class="legend-drop"></i>Dropoff</span><span class="demand-scale"><i class="legend-heat"></i>Demand: <b>green strong</b> · red weak</span></div></details>
   <div class="live-bottom-stack">
-   <div class="map-recommendation" id="moveCard"><div><span id="relocationType" class="eyebrow">RADAR MOVE</span><strong id="advice">START SHIFT</strong><small id="relocationReason">Waiting for zone evidence.</small><div class="route-actions"><button id="routeApple" class="route-btn" type="button"> Maps</button><button id="routeGoogle" class="route-btn" type="button">Google Maps</button><button id="chooseZone" class="route-btn secondary" type="button">Choose zone</button></div></div><span id="confidence">LEARNING</span></div>
+   <div class="map-recommendation" id="moveCard"><div><span id="relocationType" class="eyebrow">RADAR MOVE</span><strong id="advice">START SHIFT</strong><small id="relocationReason">Waiting for zone evidence.</small><div class="route-actions"><button id="routeApple" class="route-btn" type="button"><span class="icon-mark"><svg viewBox="0 0 24 24"><path d="M7 4.5 12 2l5 2.5v15L12 22l-5-2.5z"/><path d="M12 2v20M7 4.5l10 15"/></svg></span> Maps</button><button id="routeGoogle" class="route-btn" type="button"><span class="icon-mark"><svg viewBox="0 0 24 24"><path d="M12 21s6-5.2 6-11a6 6 0 1 0-12 0c0 5.8 6 11 6 11Z"/><circle cx="12" cy="10" r="2.2"/></svg></span> Google</button><button id="chooseZone" class="route-btn secondary" type="button">Choose zone</button></div></div><span id="confidence">LEARNING</span></div>
    <details id="orderDrawer" class="current-order floating-order order-drawer"><summary><span><span id="queueTitle" class="eyebrow">LATEST CAPTURE</span><b id="orderSummary">No active order</b></span><span class="drawer-chevron">⌃</span></summary><div class="order-detail">
     <div class="order-top"><div><span class="eyebrow">ORDER DETAIL</span><strong id="lastPay">—</strong></div><span id="lastVerdict" class="pill">—</span></div>
     <h2 id="lastMerchant">No offer captured</h2>
@@ -62,5 +62,5 @@
 <section class="card setup"><details><summary>Diagnostics</summary><label>Capture token</label><input id="token" type="password" placeholder="Vercel CAPTURE_TOKEN"><button id="saveToken" class="ghost full">Save token</button><textarea id="testText" rows="5" placeholder="$11.42&#10;Sweetgreen&#10;2.7 mi&#10;24 min"></textarea><button id="testBtn" class="ghost full">Test capture</button></details></section>
 </div>
 </main>
-<nav class="bottom-nav four"><button class="nav-btn active" data-tab="live"><span>⌂</span>Home</button><button class="nav-btn" data-tab="history"><span>◴</span>History</button><button class="nav-btn" data-tab="money"><span>▥</span>Stats</button><button class="nav-btn" data-tab="plan"><span>⚙</span>Settings</button></nav>
+<nav class="bottom-nav four" aria-label="Primary"><button class="nav-btn active" data-tab="live"><span><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9h13v-9"/><path d="M9.5 19v-5h5v5"/></svg></span>Home</button><button class="nav-btn" data-tab="history"><span><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.7L4 8.5"/><path d="M4 4v4.5h4.5M12 7.5V12l3 2"/></svg></span>History</button><button class="nav-btn" data-tab="money"><span><svg viewBox="0 0 24 24"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/><path d="m4 7 6-4 6 6 5-4"/></svg></span>Stats</button><button class="nav-btn" data-tab="plan"><span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9 7 7M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1"/></svg></span>Settings</button></nav>
 <script type="module" src="/app.js"></script></body></html>

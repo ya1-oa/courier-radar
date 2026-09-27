@@ -56,3 +56,16 @@ This file is append-only. Every major implementation pass must add an entry desc
 - WHY THIS POCKET surfaces wait, next-five-minute probability and predicted active percentage alongside restaurant and historical evidence.
 - Recommendation audit records now retain these forecast inputs plus the exact WAIT AT restaurant so later outcomes can be compared with the recommendation.
 - v1 map/routing/pocket behavior, v2 persistent merchant database/exact staging target, and v3 utilization-budget relocation remain active.
+
+
+## v5 — Closed-loop recommendation learning
+**Status: implemented outcome reconciliation; ranking feedback integration remains guarded until enough evaluated samples exist**
+
+- Recommendation logs now store observed outcome timing, whether a qualified offer arrived, payout, matched offer ID, estimated opportunity-profit delta and calibration error.
+- Reading recommendation history reconciles mature predictions against subsequent captured offers in a fixed observation window.
+- Learning summary reports evaluated recommendations, qualified outcomes, observed wait, cumulative opportunity-profit delta and Brier calibration score.
+- The Stats opportunity-money surface now uses the recommendation-learning profit metric when available instead of leaving predictions unaudited.
+- Audit evidence records baseline expected payout so future profit lift can compare recommendation outcome against the decision-time baseline.
+- This closes the prediction -> action -> observed outcome -> calibration dataset loop without inventing causality from unevaluated recommendations.
+- Existing skip-counterfactual Radar Advantage remains a separate metric: it estimates money gained/lost from SKIP decisions, while recommendation opportunity-profit measures post-reposition/zone recommendations.
+- v1-v4 invariants remain required.

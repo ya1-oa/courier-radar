@@ -35,3 +35,10 @@ The recent Vercel deployment pages inspected during v40 contained no failed depl
 - The live map now launches expanded; docking is an explicit rider action rather than the default state.
 - Production generated assets are part of the service-worker shell cache so installed iPhone PWAs do not mix new DOM/CSS with stale icon frames.
 - v44 also repaired the planner function boundary found during integration; a malformed refreshLearning/refreshStartPlan seam could prevent application JavaScript from parsing and therefore make the map appear broken even when MapLibre itself was healthy.
+
+
+## v45 rider-facing map invariants
+- Restaurant popups describe a nearby restaurant; internal catalog labels such as “Culver merchant inventory” are prohibited in rider-facing UI.
+- A WAIT AT marker is a staging recommendation, not a prediction that Uber will dispatch from that exact restaurant.
+- The displayed target uses the exact waitAt coordinates when available and preserves the pocket as supporting context.
+- Explicit scans may animate planner state; periodic refreshes may not make the recommendation flicker between SCANNING and READY.

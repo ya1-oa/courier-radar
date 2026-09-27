@@ -1,5 +1,5 @@
-const CACHE='courier-radar-v42';
-const STATIC=['/','/styles.css','/app.js','/map.js','/lib-network.js','/manifest.webmanifest','/icon.svg'];
+const CACHE='courier-radar-v44';
+const STATIC=['/','/styles.css','/app.js','/map.js','/lib-network.js','/manifest.webmanifest','/icon.svg','/assets/generated/nav-sprite.webp','/assets/generated/map-controls-sprite.webp','/assets/generated/scan-0.webp','/assets/generated/scan-1.webp','/assets/generated/scan-2.webp','/assets/generated/scan-3.webp','/assets/generated/scan-4.webp','/assets/generated/scan-5.webp','/assets/generated/scan-6.webp','/assets/generated/scan-7.webp','/assets/generated/scan-8.webp'];
 
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(STATIC)).then(()=>self.skipWaiting()));

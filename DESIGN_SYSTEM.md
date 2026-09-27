@@ -46,3 +46,12 @@ Motion is part of hierarchy, not decoration.
 - Respect prefers-reduced-motion.
 - Default Home while offline is intentionally sparse: earnings + scan + map + Start Shift. Idle/reposition cards are contextual and appear only during a shift.
 - Never cover most of the map with default-state cards.
+
+
+## Generated production assets
+- Production iconography is generated as a coherent YA Creative family, then cropped/optimized into WebP assets under `assets/generated/`.
+- Navigation uses `nav-sprite.webp`; map controls use `map-controls-sprite.webp`; SCAN uses the committed nine-frame generated sequence.
+- CSS may crop a committed sprite into individual component states, but may not substitute unrelated Unicode glyphs or generic icon-library art.
+- Active/inactive variants must come from the same authored sheet so silhouette, lighting, depth and glow remain consistent.
+- Animated controls require authored frame sequences or deliberately composed transforms of authored assets. Animation must communicate state.
+- Source asset-sheet crops are production art, not inspiration references: do not redraw them with arbitrary SVGs during later UI work.

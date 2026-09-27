@@ -136,3 +136,16 @@ This file is append-only. Every major implementation pass must add an entry desc
 - Removed runtime dependence on those sheet-crop sprites and scan frames. Navigation, map actions, scan, status and shift controls are now reconstructed as clean CSS/vector-like primitives based on the approved reference language.
 - PWA cache advanced to v44-1 and no longer pre-caches rejected generated crop assets.
 - This correction is intentionally still on the integration branch. Production merge remains gated on preview + iPhone visual/map QA.
+
+
+## v11 / UI v45 — Final interaction pass + recommendation-language audit
+**Status: implemented on main; deployment/iPhone smoke test pending**
+
+- Replaced the old upward page entrance with full-viewport horizontal destination swipes.
+- Added spring/pop feedback to navigation and controls, periodic shift-button bloom/shine, stronger press feedback, and progressive haptic calls where the browser supports vibration.
+- Rebuilt SCAN as an explicit idle -> scanning -> complete -> ready state machine with rotating radar sweep, signal-wave animation, completion confirmation and stable persistent art.
+- Removed the planner flicker caused by refreshData repeatedly calling refreshStartPlan: existing recommendations now stay visible during ordinary refreshes; only explicit scans expose scanning UI.
+- Changed pre-shift guidance from ambiguous START pocket copy to STAGE AT the exact waitAt merchant when available; pocket names remain evidence/context instead of pretending two merchants are one destination.
+- Replaced the rider-facing “Culver merchant inventory” map popup copy with “nearby restaurant.”
+- Audited the target semantics: waitAt is a restaurant-gateway staging coordinate selected from the ranked pocket, not a guarantee that an Uber order will originate there. Density-only targets remain labeled as exploratory until personal completion/offer evidence accumulates.
+- Existing v1-v5 scoring, 80% utilization budget, exact coordinate routing, closed-loop learning and map reliability invariants remain active.

@@ -34,3 +34,15 @@ Icons are authored SVG linework, viewBox 0 0 24 24, currentColor, rounded caps/j
 
 ## CSS maintenance rule
 styles.css is now a single coherent system. Never append v41/v42 override patches to repair layout. Change the canonical component rule. Repeated version override blocks were the primary source of lopsided spacing and contradictory display/position behavior.
+
+
+## Motion system
+Motion is part of hierarchy, not decoration.
+- Micro interaction: 180ms spring for button press and icon response.
+- Component state: 420ms ease for cards, borders, opacity and tab transitions.
+- Spatial/HUD motion: 720ms ease for map-shell movement.
+- SCAN may use a restrained repeating signal sweep only while work is actually in progress.
+- Active-shift status may pulse; static screens must not contain arbitrary looping animation.
+- Respect prefers-reduced-motion.
+- Default Home while offline is intentionally sparse: earnings + scan + map + Start Shift. Idle/reposition cards are contextual and appear only during a shift.
+- Never cover most of the map with default-state cards.

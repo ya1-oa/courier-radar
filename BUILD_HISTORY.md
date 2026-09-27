@@ -129,3 +129,10 @@ This file is append-only. Every major implementation pass must add an entry desc
 - During the pass, found and repaired a malformed refreshLearning -> refreshStartPlan seam in app.js. This was a JavaScript parse/runtime blocker capable of making the map look broken independently of MapLibre loading.
 - Existing v1-v5 intelligence and v40-v43 design/map invariants remain intact.
 - Remaining gate: merge/deploy, confirm Vercel READY, then perform the required iPhone map/shift/scan smoke test.
+
+
+### v44.1 visual QA correction
+- iPhone QA rejected the initial raster integration: sprite crops visibly contained source-sheet labels/backgrounds and were not production assets.
+- Removed runtime dependence on those sheet-crop sprites and scan frames. Navigation, map actions, scan, status and shift controls are now reconstructed as clean CSS/vector-like primitives based on the approved reference language.
+- PWA cache advanced to v44-1 and no longer pre-caches rejected generated crop assets.
+- This correction is intentionally still on the integration branch. Production merge remains gated on preview + iPhone visual/map QA.

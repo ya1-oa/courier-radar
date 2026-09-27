@@ -149,3 +149,13 @@ This file is append-only. Every major implementation pass must add an entry desc
 - Replaced the rider-facing “Culver merchant inventory” map popup copy with “nearby restaurant.”
 - Audited the target semantics: waitAt is a restaurant-gateway staging coordinate selected from the ranked pocket, not a guarantee that an Uber order will originate there. Density-only targets remain labeled as exploratory until personal completion/offer evidence accumulates.
 - Existing v1-v5 scoring, 80% utilization budget, exact coordinate routing, closed-loop learning and map reliability invariants remain active.
+
+
+## v12 / UI v45.2 — Uber evidence labeling
+**Status: implemented on main; deployment/on-device verification pending**
+
+- Nearby restaurant density is now explicitly separated from Uber-specific evidence.
+- Every recommended pocket exposes three different counts when available: total mapped restaurants nearby, restaurants observed by name in the rider's captured Uber offer history, and restaurants with completed pickups in that history.
+- Zero Uber-observed restaurants is rendered as “Uber coverage unconfirmed,” not as a claim that the restaurants are not on Uber Eats.
+- “Confirmed pickup” means confirmed by this rider's completed Radar/Uber history; it is not an Uber-platform certification.
+- General OSM/Supabase restaurant inventory is never labeled “confirmed Uber Eats.”

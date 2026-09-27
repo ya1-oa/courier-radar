@@ -76,7 +76,7 @@ export async function updateRadarMap({features=[],position=null,destination=null
  if(validPoint(position)&&(fit||!centeredOnce)){centeredOnce=true;map.easeTo({center:[Number(position.lng),Number(position.lat)],zoom:14.6,duration:650})}
  map.getSource('radar-destination')?.setData(validPoint(destination)?fc([{type:'Feature',properties:{zone:destination.zone||''},geometry:{type:'Point',coordinates:[Number(destination.lng),Number(destination.lat)]}}]):fc());
  if(validPoint(target)){
-  map.getSource('radar-target')?.setData(fc([{type:'Feature',properties:{label:target.label||'MOVE TARGET',type:target.type||''},geometry:{type:'Point',coordinates:[Number(target.lng),Number(target.lat)]}}]));
+  map.getSource('radar-target')?.setData(fc([{type:'Feature',properties:{label:target.label||'STAGE HERE',type:target.type||''},geometry:{type:'Point',coordinates:[Number(target.lng),Number(target.lat)]}}]));
   map.getSource('radar-route')?.setData(validPoint(position)?fc([{type:'Feature',properties:{},geometry:{type:'LineString',coordinates:[[Number(position.lng),Number(position.lat)],[Number(target.lng),Number(target.lat)]]}}]):fc());
  }else{
   map.getSource('radar-target')?.setData(fc());

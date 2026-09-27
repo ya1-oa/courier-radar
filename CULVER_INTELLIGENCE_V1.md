@@ -37,3 +37,12 @@ Per cell/pocket/time bucket: available seconds, active seconds, all offers, qual
 
 ## APIs
 Priority: Radar/Supabase ground truth; BestTime restaurant activity; event intelligence (Ticketmaster currently, richer attendance/impact provider later); weather; merchant identity/hours; cycling travel time. Cache external merchant data rather than querying every restaurant every scan.
+
+
+## v2 restaurant gateway intelligence
+- Every recommended pocket must also identify a specific WAIT AT restaurant or precise restaurant gateway when merchant evidence is available.
+- The wait target is a real merchant coordinate, not merely a pocket centroid. Map relocation pin and Apple/Google routing target the selected wait restaurant.
+- Maintain a coordinate-backed Culver merchant inventory and render the inventory on the map. Pocket scoring must operate over those merchant coordinates so dense gateways and adjacent clusters can be detected.
+- Restaurant target ranking combines time-block fit, centrality within the pocket, observed Radar offers/completions/payout evidence, external activity signals and travel cost.
+- The specific restaurant recommendation is an operational waiting location, not a claim that the next Uber order will come from that merchant.
+- Pocket recommendation remains primary; restaurant target is the best staging point inside that pocket and may change by time block or learned dispatch behavior.

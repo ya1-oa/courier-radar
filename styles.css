@@ -139,3 +139,19 @@ body:not(.shift-active) .floating-shift{box-shadow:0 14px 38px rgba(0,0,0,.32)}
 .start-planner strong,.start-planner #startPlanReason,.scan-providers{transition:color 260ms ease,opacity 260ms ease}
 .bottom-nav{will-change:transform}
 @media(prefers-reduced-motion:reduce){.floating-shift,.floating-shift:after,.planner-refresh .scan-art,.nav-btn.active .nav-art{animation:none!important}}
+
+/* v45.3 — History offer ledger */
+#captureHistory{display:flex;flex-direction:column;margin-top:12px}
+.capture-history-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;padding:16px 0;border-top:1px solid var(--hair);min-width:0}
+.capture-history-row:first-child{border-top:0;padding-top:6px}
+.capture-offer-main{min-width:0;display:flex;flex-direction:column;gap:8px}
+.capture-offer-main>b{display:block;font-size:17px;line-height:1.18;letter-spacing:-.025em;white-space:normal;overflow-wrap:anywhere}
+.capture-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:12px;line-height:1.2}
+.capture-state{display:inline-flex;align-items:center;min-height:24px;padding:4px 8px;border:1px solid var(--hair-strong);border-radius:999px;font-size:10px;font-weight:850;letter-spacing:.08em;text-transform:uppercase;color:#b9c8d0;background:rgba(255,255,255,.025)}
+.capture-offer-value{display:flex;flex-direction:column;align-items:flex-end;gap:4px;white-space:nowrap}
+.capture-offer-value strong{font-size:18px;line-height:1;font-variant-numeric:tabular-nums}
+.capture-offer-value time{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.capture-history-row.state-accepted .capture-state,.capture-history-row.state-arrived .capture-state,.capture-history-row.state-picked_up .capture-state{color:var(--sky);border-color:rgba(107,220,255,.28);background:rgba(107,220,255,.07)}
+.capture-history-row.state-rejected .capture-state,.capture-history-row.state-passed .capture-state{color:#9aabb5}
+.capture-history-row.state-cancelled .capture-state{color:var(--danger);border-color:rgba(255,107,114,.25)}
+@media(max-width:380px){.capture-history-row{gap:10px}.capture-offer-main>b{font-size:16px}.capture-offer-value strong{font-size:17px}}

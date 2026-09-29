@@ -102,7 +102,7 @@ export function buildDispatchModel({offers=[],events=[],presence=[],shifts=[],no
   }
  }
  const observed=unique.filter(o=>{
-  const at=ms(o.captured_at);return !busyAt(at)&&inShift(at)&&exposures.some(x=>at>=x.a-15000&&at<=x.b+15000);
+  const at=ms(o.captured_at);return !busyAt(at)&&inShift(at)&&exposures.some(x=>x.zone===zoneFrom(o)&&at>=x.a-15000&&at<=x.b+15000);
  });
  for(const o of observed){
   const zone=zoneFrom(o),block=dispatchBlock(o.captured_at),key=zone+'|'+block,g=byKey.get(key),all=global.get(block);

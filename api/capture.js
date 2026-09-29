@@ -11,7 +11,7 @@ export default async function handler(req,res){
   if(screen.kind==='lifecycle'){
     if(!dbConfigured())return res.status(503).json({error:'Database unavailable'});
     const active=await select('offers?driver_id=eq.'+driverId+'&state=in.(observed,accepted,arrived,picked_up)&order=captured_at.desc&limit=12&select=*').catch(()=>[]);
-    const latest=(active||[]).find(o=>['accepted','arrived','picked_up'].includes(o.state))||active?.[0];
+    const latest=(active||[]).filter(o=>Date.now()-new Date(o.captured_at).getTime()<4*3600000).sort((a,b)=>new Date(b.captured_at)-new Date(a.captured_at))[0];
     if(!latest)return res.status(200).json({ok:true,screen,updated:false,reason:'No active Radar order matched. Capture and mark the Uber offer first.'});
     const stage=screenTransition(latest.state,screen.stage);
     if(!stage)return res.status(200).json({ok:true,screen,updated:false,currentState:latest.state,reason:'Requires intervening lifecycle evidence or manual Next; no state changed.'});

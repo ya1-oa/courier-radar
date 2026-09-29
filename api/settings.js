@@ -21,8 +21,8 @@ export default async function handler(req,res){
     if(String(req.query?.resource||'')==='dispatch'){
       if(req.method==='GET'){const rows=await select('driver_settings?driver_id=eq.'+driverId+'&limit=1&select=dispatch_policy');return res.status(200).json({policy:rows?.[0]?.dispatch_policy||{}})}
       if(req.method==='POST'){
-       const b=await bodyOf(req),date=/^\\d{4}-\\d{2}-\\d{2}$/.test(String(b.calibrationDay||''))?b.calibrationDay:'2026-09-29';
-       const time=/^\\d{2}:\\d{2}$/.test(String(b.stopTime||''))?b.stopTime:'01:00';
+       const b=await bodyOf(req),date=/^\d{4}-\d{2}-\d{2}$/.test(String(b.calibrationDay||''))?b.calibrationDay:'2026-09-29';
+       const time=/^\d{2}:\d{2}$/.test(String(b.stopTime||''))?b.stopTime:'01:00';
        const battery=b.batteryMiles==null||b.batteryMiles===''?null:Number(b.batteryMiles);
        if(battery!==null&&(!Number.isFinite(battery)||battery<0||battery>100))return res.status(400).json({error:'Battery range must be 0–100 miles or empty'});
        const policy={calibrationDay:date,stopTime:time,batteryMiles:battery,batteryRecordedAt:battery==null?null:new Date().toISOString()};

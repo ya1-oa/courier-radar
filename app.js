@@ -152,7 +152,7 @@ function renderDispatchControls(){
  const p=policyPrefs(),health=$('dispatchModelHealth'),status=$('uberSyncStatus');
  for(const [id,value] of [['calibrationDay',p.calibrationDay],['radarStopTime',p.stopTime],['batteryMilesLeft',p.batteryMiles??'']]){const input=$(id);if(input&&document.activeElement!==input)input.value=value}
  const m=model();
- if(health)health.textContent=m?'Model v'+m.version+' · '+m.offersObservedAvailable+' distinct offers matched to '+Math.round(m.verifiedAvailableMinutes)+' GPS-confirmed available minutes · '+m.completedWindows+' delivery windows · '+(trainingDay()?'CALIBRATION TODAY':'LIVE POLICY')+'.':'Waiting for GPS/exposure telemetry. Default policy: bank feasible orders.';
+ if(health)health.textContent=m?'Model v'+m.version+' · '+m.offersObservedAvailable+' distinct offers matched to '+Math.round(m.verifiedAvailableMinutes)+' GPS-confirmed available minutes · '+m.completedWindows+' delivery windows · '+(trainingDay()?'CALIBRATION TODAY':'LIVE POLICY')+' · '+(batteryRemaining()==null?'battery estimate missing':'estimated '+batteryRemaining()+' miles left')+'.':'Waiting for GPS/exposure telemetry. Default policy: bank feasible orders.';
  if($('earningsSourceLabel'))$('earningsSourceLabel').textContent=statsData?.todayEarningsSource==='uber_manual_total'?'Uber daily total (manual)':statsData?.todayEarningsSource==='uber_csv'?'Uber CSV':'Radar captured only';
  if(status&&statsData?.todayEarningsUpdatedAt)status.textContent='Latest manual Uber total: '+money(statsData.todayEarnings)+' · '+new Date(statsData.todayEarningsUpdatedAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+'. Update whenever Uber total changes.';
  if($('uberTodayTotal')&&document.activeElement!==$('uberTodayTotal')&&statsData?.todayEarningsSource==='uber_manual_total')$('uberTodayTotal').value=Number(statsData.todayEarnings).toFixed(2);
@@ -181,11 +181,18 @@ const onboardSteps=[
 function showOnboard(){const root=$('onboarding');if(localStorage.getItem(ONBOARD_KEY)){root.classList.add('hidden');return}root.classList.remove('hidden');renderOnboard()}
 function renderOnboard(){const p=profile();$('onboardBody').innerHTML=onboardSteps[onboardStep]();$('dots').innerHTML=onboardSteps.map((_,i)=>`<i class="${i===onboardStep?'active':''}"></i>`).join('');$('backBtn').classList.toggle('hidden',onboardStep===0);$('skipBtn').classList.toggle('hidden',onboardStep===onboardSteps.length-1);$('nextBtn').textContent=onboardStep===onboardSteps.length-1?'Launch Radar':'Continue';document.querySelectorAll('[data-vehicle]').forEach(btn=>{btn.classList.toggle('selected',btn.dataset.vehicle===p.vehicle);btn.onclick=()=>{saveProfile({vehicle:btn.dataset.vehicle});renderOnboard()}});const t=$('targetInput');if(t)t.onchange=()=>saveProfile({target:Math.max(15,Math.min(100,Number(t.value)||35))});}
 function nextOnboard(){if(onboardStep<onboardSteps.length-1){onboardStep++;renderOnboard()}else{localStorage.setItem(ONBOARD_KEY,'1');$('onboarding').classList.add('hidden');getLocation().catch(()=>null).finally(()=>{render();renderMap()})}}
-if($('saveDispatchSettings'))$('saveDispatchSettings').onclick=()=>{
- const batteryText=$('batteryMilesLeft')?.value.trim()||'',miles=batteryText===''?null:Number(batteryText);
- if(miles!==null&&(!Number.isFinite(miles)||miles<0||miles>100))return alert('Use a valid remaining-range estimate in miles.');
- savePolicyPrefs({calibrationDay:$('calibrationDay')?.value||'2026-09-29',stopTime:$('radarStopTime')?.value||'01:00',batteryMiles:miles});
- if($('dispatchPrefsStatus'))$('dispatchPrefsStatus').textContent='Saved · '+(trainingDay()?'Calibration today':'Learned policy')+' · '+(miles==null?'battery unknown':miles+' miles battery left');
+if($('saveDispatchSettings'))$('saveDispatchSettings').onclick=async()=>{
+ const value=$('batteryMilesLeft')?.value.trim()||'',miles=value===''?null:Number(value);
+ if(miles!==null&&(!Number.isFinite(miles)||miles<0||miles>100))return alert('Enter a valid bike remaining range in miles.');
+ const prefs={calibrationDay:$('calibrationDay')?.value||'2026-09-29',stopTime:$('radarStopTime')?.value||'01:00',batteryMiles:miles,batteryRecordedAt:miles==null?null:new Date().toISOString()};
+ savePolicyPrefs(prefs);
+ $('saveDispatchSettings').disabled=true;
+ try{
+  const result=await api('/api/settings?resource=dispatch',{method:'POST',body:JSON.stringify(prefs)});
+  if(result.policy)savePolicyPrefs(result.policy);
+  if($('dispatchPrefsStatus'))$('dispatchPrefsStatus').textContent='Saved on server: Shortcut and Radar now share this policy.';
+ }catch(err){if($('dispatchPrefsStatus'))$('dispatchPrefsStatus').textContent='Saved on phone only; server sync failed: '+err.message}
+ finally{$('saveDispatchSettings').disabled=false}
  render();renderIdleCommand();renderDispatchControls();
 };
 if($('saveUberToday'))$('saveUberToday').onclick=async()=>{

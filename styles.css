@@ -249,3 +249,18 @@ body:has(.live-map-view.active){padding-bottom:0;min-height:100dvh}
  .radar-stage:has(.order-drawer.active-delivery) .map-idle{display:none!important}
  .radar-stage:has(.order-drawer.active-delivery) .order-drawer.active-delivery{left:8px;right:8px;bottom:calc(68px + env(safe-area-inset-bottom) + 12px);max-height:min(27dvh,205px)}
 }
+
+/* v46.6 — map-first movement UI. Recommendation lives on the target pin. */
+.live-map-view.active .map-recommendation{display:none!important}
+.live-map-view.active .start-planner{max-width:min(310px,calc(100vw - 94px));min-height:76px;padding:9px 10px 9px 13px;border-radius:18px}
+.live-map-view.active .start-planner #startPlanReason{display:none}
+.live-map-view.active .planner-refresh{width:58px;height:58px}
+.live-map-view.active .scan-label{display:none}
+.live-map-view.active .scan-art{inset:2px!important}
+.live-map-view.active .live-bottom-stack{pointer-events:none}
+.live-map-view.active .live-bottom-stack .floating-shift{pointer-events:auto;min-height:48px;max-width:230px;font-size:12px}
+@media(max-width:430px){
+ .live-map-view.active .start-planner{margin-right:62px;max-width:270px}
+ .live-map-view.active .live-money-bar{max-width:calc(100vw - 82px);border-radius:18px}
+ .live-map-view.active .live-bottom-stack .floating-shift{min-height:46px;max-width:210px}
+}

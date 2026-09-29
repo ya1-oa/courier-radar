@@ -80,3 +80,13 @@ test('accepted-trip range is deducted once and is anchored to latest rider updat
  assert.equal(remainingBatteryMiles(p,[a,copy]),16.4);
  assert.equal(remainingBatteryMiles({...p,batteryRecordedAt:iso(now-20*60000)},[a]),20);
 });
+
+test('manual recovered orders do not manufacture captured Uber offer arrival samples',()=>{
+ const o={id:'manual',source:'manual_recovery',raw_text:'MANUAL_RECOVERY:test',captured_at:iso(now-60*60000),payout:12,miles:3,eta_minutes:23,merchant:'Reconstructed',state:'delivered',...westwood};
+ const events=[{offer_id:'manual',event:'accepted',captured_at:iso(now-60*60000)},{offer_id:'manual',event:'delivered',captured_at:iso(now-35*60000)}];
+ const model=buildDispatchModel({offers:[o],events,presence:pings(),shifts:[st],now});
+ assert.equal(model.offersCaptured,0);
+ assert.equal(model.offersObservedAvailable,0);
+ assert.equal(model.completedWindows,1);
+ assert.ok(model.verifiedAvailableMinutes<105);
+});

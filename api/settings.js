@@ -18,6 +18,19 @@ export default async function handler(req,res){
   const driverId=requireToken(req,res); if(!driverId)return;
   if(!dbConfigured())return res.status(503).json({error:'Supabase is not configured'});
   try{
+    if(String(req.query?.resource||'')==='dispatch'){
+      if(req.method==='GET'){const rows=await select('driver_settings?driver_id=eq.'+driverId+'&limit=1&select=dispatch_policy');return res.status(200).json({policy:rows?.[0]?.dispatch_policy||{}})}
+      if(req.method==='POST'){
+       const b=await bodyOf(req),date=/^\\d{4}-\\d{2}-\\d{2}$/.test(String(b.calibrationDay||''))?b.calibrationDay:'2026-09-29';
+       const time=/^\\d{2}:\\d{2}$/.test(String(b.stopTime||''))?b.stopTime:'01:00';
+       const battery=b.batteryMiles==null||b.batteryMiles===''?null:Number(b.batteryMiles);
+       if(battery!==null&&(!Number.isFinite(battery)||battery<0||battery>100))return res.status(400).json({error:'Battery range must be 0–100 miles or empty'});
+       const policy={calibrationDay:date,stopTime:time,batteryMiles:battery,batteryRecordedAt:battery==null?null:new Date().toISOString()};
+       await upsert('driver_settings',{driver_id:driverId,dispatch_policy:policy,updated_at:new Date().toISOString()},'driver_id');
+       return res.status(200).json({ok:true,policy});
+      }
+      return res.status(405).json({error:'GET or POST only'});
+    }
     if(req.method==='GET' && String(req.query?.resource||'')==='recommendations'){
       const rows=await select(`recommendation_logs?driver_id=eq.${driverId}&order=created_at.desc&limit=200&select=*`)||[],offers=await select(`offers?driver_id=eq.${driverId}&order=captured_at.desc&limit=2000&select=id,captured_at,payout,final_payout,eta_minutes,radar_eta_minutes,state,merchant`).catch(()=>[])||[];
       const now=Date.now(),qualified=o=>{const pay=Number(o.final_payout??o.payout??0),eta=Math.max(1,Number(o.eta_minutes)||Number(o.radar_eta_minutes)||30);return pay>0&&pay/eta*60>=24};

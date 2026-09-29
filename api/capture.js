@@ -36,6 +36,7 @@ export default async function handler(req,res){
         const active=await select(`batches?driver_id=eq.${driverId}&state=neq.completed&order=started_at.desc&limit=1&select=id,state,order_count`);
         if(parsed.isAddOn && active?.[0]?.id) batchId=active[0].id;
       }
+      if(batchId && parsed.isAddOn){const rows=await select(`offers?driver_id=eq.${driverId}&batch_id=eq.${batchId}&select=payout,miles,eta_minutes,stack_count`).catch(()=>[]),all=[...(rows||[]),row],offeredPayout=all.reduce((s,o)=>s+(Number(o.payout)||0),0),offeredMiles=all.reduce((s,o)=>s+(Number(o.miles)||0),0),orderCount=Math.max(all.length,all.reduce((s,o)=>s+Math.max(1,Number(o.stack_count||1)),0));await patch(`batches?id=eq.${batchId}&driver_id=eq.${driverId}`,{offered_payout:Number(offeredPayout.toFixed(2)),offered_miles:Number(offeredMiles.toFixed(2)),order_count:orderCount}).catch(()=>null)}
       if(!batchId){
         const b=await insert('batches',{driver_id:driverId,state:'observed',offered_payout:parsed.payout,offered_miles:parsed.miles,order_count:parsed.stackCount||1});
         batchId=b?.[0]?.id||null;

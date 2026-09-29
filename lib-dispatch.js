@@ -182,7 +182,7 @@ export function decideDispatchWait({model,position,now=Date.now(),remainingMinut
 export function remainingBatteryMiles(policy,orders=[]){
  if(policy?.batteryMiles==null||policy?.batteryMiles==='')return null;
  const starting=Number(policy.batteryMiles);if(!Number.isFinite(starting))return null;
- const at=ms(policy.batteryRecordedAt),seen=new Map();let used=0;
+ const at=(policy.batteryRecordedAt?ms(policy.batteryRecordedAt):Date.now()),seen=new Map();let used=0;
  for(const o of orders){
   if(!['accepted','arrived','picked_up','delivered','completed'].includes(String(o.state||'')))continue;
   const time=ms(o.captured_at);if(Number.isFinite(at)&&time<at)continue;

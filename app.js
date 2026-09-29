@@ -32,14 +32,15 @@ function decisionForOffer(o){
  const arrivalProb=Math.min(.98,eta>0?1-Math.exp(-eta/observedWait):0),replacementCash=nextPayout*arrivalProb;
  const learnedSkipMultiplier=Math.max(.15,Math.min(1.5,Number(learn.skipValueMultiplier??1)));
  const idlePenalty=Math.min(.75,idleNow/30*.75),utilTarget=Math.max(.45,Math.min(.85,Number(learn.targetUtilization??.65))),lowUtilPenalty=Math.max(0,utilTarget-utilization)*1.4;
- const skipValue=replacementCash*learnedSkipMultiplier*Math.max(.10,1-idlePenalty-lowUtilPenalty);
+ const declinePenaltyCash=Math.max(0,Number(learn.declinePenaltyCash||0));
+ const skipValue=Math.max(0,replacementCash*learnedSkipMultiplier*Math.max(.10,1-idlePenalty-lowUtilPenalty)-declinePenaltyCash);
  const feasible=payout>0&&eta>0&&miles>=0,batteryTrap=miles>=Number(learn.maxLowPayMiles??15)&&payout<Number(learn.lowPayFloor??15),timeTrap=eta>=Number(learn.maxLowPayMinutes??90)&&payout<Number(learn.timeTrapPayFloor??18),dominated=feasible&&payout<Number(learn.absoluteMinPay??4)&&miles>=6;
  let verdict='TAKE',why='';
  if(!feasible){verdict='BORDERLINE';why='Offer data incomplete — verify the Uber card before accepting.'}
  else if(batteryTrap||timeTrap||dominated){verdict='SKIP';why=`Skip learned extreme trap: ${money(payout)} for ${eta||'?'}m / ${miles.toFixed(1)}mi.`}
  else if(payout<skipValue&&utilization>utilTarget&&idleNow<Math.max(3,observedWait*.55)){verdict='BORDERLINE';why=`Borderline: learned replacement value is ${money(skipValue)} from your own recent outcomes.`}
  else{verdict='TAKE';why=`TAKE · bank ${money(payout)}. ${money(Math.max(0,remaining-payout))} remains to ${money(dayGoal)} · learned utilization ${Math.round(utilization*100)}% · wait value ${money(skipValue)}.`}
- return{...econ,...replacement,rate:econ.net||econ.gross||0,target:dayGoal,remaining,verdict,idleNow,cashFirst:true,cashReason:why,utilization,skipValue,replacementCash,arrivalProb,selfLearning:true,learningSamples:Number(learn.samples||0)};
+ return{...econ,...replacement,rate:econ.net||econ.gross||0,target:dayGoal,remaining,verdict,idleNow,cashFirst:true,cashReason:why,utilization,skipValue,replacementCash,arrivalProb,declinePenaltyCash,selfLearning:true,learningSamples:Number(learn.samples||0)};
 }
 function median(arr){const a=arr.filter(Number.isFinite).sort((x,y)=>x-y);if(!a.length)return null;const m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2}
 function allCells(){return [...(network.market?.length?network.market:network.personal||[])]}

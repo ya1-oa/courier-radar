@@ -70,7 +70,7 @@ struct EarningsView:View {
                         }
                         .chartXAxis {
                             AxisMarks(values:[0,6,12,18,23]){
-                                AxisValueLabel(format:.number)
+                                AxisValueLabel()
                             }
                         }
                         .chartYAxis {

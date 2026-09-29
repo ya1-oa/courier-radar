@@ -7,7 +7,8 @@ export function inspectUberScreen(text){
  if(!raw)return {kind:'unknown',confidence:0,reason:'No readable text'};
  const offer=parseOfferText(raw);
  const hasOfferControls=has(raw,/\b(?:accept(?:\s+request)?|decline|reject|exclusive|match(?:\s+request)?|includes? expected tip|delivery\s*\(\s*\d+\s*\))\b/i);
- if(Number(offer.payout)>0&&Number(offer.miles)>0&&Number(offer.etaMinutes)>0&&(hasOfferControls||offer.confidence>=.82))return {kind:'offer',confidence:offer.confidence,parsed:offer};
+ const hasLifecycleControls=has(raw,/\b(?:confirm\s+pickup|verify\s+order|ready\s+for\s+pickup|head\s+to\s+(?:the\s+)?(?:restaurant|pickup|customer|drop.?off)|navigate\s+to\s+(?:the\s+)?(?:pickup|customer|drop.?off)|start\s+delivery|delivery\s+(?:completed|complete)|trip\s+completed|order\s+delivered)\b/i);
+ if(Number(offer.payout)>0&&Number(offer.miles)>0&&Number(offer.etaMinutes)>0&&(hasOfferControls||(!hasLifecycleControls&&offer.confidence>=.82)))return {kind:'offer',confidence:offer.confidence,parsed:offer};
  const complete=has(raw,/\b(?:delivery\s+(?:completed|complete|finished)|trip\s+completed|order\s+delivered|delivered\s+successfully|you\s+(?:have\s+)?completed\s+(?:the|this|your)\s+delivery)\b/i)
    &&!has(raw,/\b(?:mark\s+as\s+delivered|confirm\s+delivery|slide\s+to\s+complete|complete\s+delivery|how\s+to\s+complete)\b/i);
  if(complete)return {kind:'lifecycle',stage:'delivered',confidence:.96,reason:'Explicit Uber completion confirmation'};

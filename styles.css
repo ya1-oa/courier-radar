@@ -305,3 +305,22 @@ body:has(.live-map-view.active){padding-bottom:0;min-height:100dvh}
  .live-map-view.active .map-idle{top:61px}
  .live-map-view.active .order-drawer{width:calc(100vw - 66px)}
 }
+
+/* v48 — barebones offer-first Radar */
+.live-map-view.active .map-idle{display:none!important}
+.live-map-view.active .radar-cells-fill,.live-map-view.active .radar-cells-line{opacity:.45}
+.history-hero{display:flex;align-items:flex-end;justify-content:space-between;padding:22px 18px 14px;gap:16px}
+.history-hero h2{margin:3px 0 0;font-size:28px;letter-spacing:-.04em}
+.history-total{text-align:right}.history-total strong{display:block;font-size:27px;line-height:1}.history-total span{display:block;margin-top:4px;font-size:9px;opacity:.55;text-transform:uppercase;letter-spacing:.08em}
+.history-section{padding:8px 14px 14px}.history-section .section-title{padding:8px 4px 10px}.history-section .section-title b{font-size:13px;text-transform:none;letter-spacing:0}.history-section .section-title span{font-size:10px;opacity:.5}
+.history-list{display:flex;flex-direction:column;gap:7px}
+.delivery-history-row,.capture-history-row{display:grid!important;grid-template-columns:minmax(0,1fr) auto;gap:5px 12px;align-items:center;padding:12px 13px!important;margin:0!important;border-radius:16px!important;background:rgba(255,255,255,.055)!important;border:1px solid rgba(255,255,255,.06)!important;box-shadow:none!important}
+.history-main b,.capture-offer-main b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.history-main>span,.capture-meta{font-size:10px;opacity:.58}
+.delivery-history-row>strong,.capture-offer-value strong{font-size:16px}
+.history-time{grid-column:1/-1;display:flex!important;gap:7px!important;align-items:center;padding-top:5px!important;margin:0!important;border-top:1px solid rgba(255,255,255,.05);font-size:9px;opacity:.55}
+.history-time span{display:inline!important}.history-time i{opacity:.45}
+.capture-offer-value{text-align:right}.capture-offer-value time{display:block;font-size:9px;opacity:.5;margin-top:3px}
+.capture-state{font-weight:700;opacity:1}
+.secondary-history{padding-top:2px}
+.history-section+.history-section{border-top:0!important}

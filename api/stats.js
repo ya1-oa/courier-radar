@@ -1,4 +1,5 @@
 import { cors, requireToken, dbConfigured, select } from './_shared.js';
+import { buildDispatchModel } from '../lib-dispatch.js';
 const mins=(a,b)=>Math.max(0,(new Date(b)-new Date(a))/60000);
 export default async function handler(req,res){
  cors(res); if(req.method==='OPTIONS')return res.status(204).end(); if(req.method!=='GET')return res.status(405).json({error:'GET only'});
@@ -56,35 +57,8 @@ export default async function handler(req,res){
     skipDecisions.push({offerId:o.id,merchant:o.merchant||'Unknown',decisionAt:new Date(decisionAt).toISOString(),estimatedTake:Number(estimatedTake.toFixed(2)),actualAfterSkip:Number(actual.toFixed(2)),advantage:Number(advantage.toFixed(2)),replacementOrders:[...unique.values()].map(x=>x.merchant||'Unknown'),windowMinutes:eta});
   }
   const radarAdvantageStats={estimatedValue:Number(radarAdvantage.toFixed(2)),evaluated:skipDecisions.length,excluded:excludedSkips,wins:radarWins,losses:radarLosses,avgPerDecision:skipDecisions.length?Number((radarAdvantage/skipDecisions.length).toFixed(2)):0,recent:skipDecisions.slice(-10).reverse()};
-  // Self-learning policy: derive the next decision priors from this driver's own observed outcomes.
-  // Recent observations are weighted more heavily so the policy adapts without code changes.
-  const nowMs=Date.now(),recentSignals=signalOffers.filter(o=>nowMs-new Date(o.captured_at).getTime()<=14*86400000);
-  const recencyWeight=o=>Math.exp(-Math.max(0,nowMs-new Date(o.captured_at).getTime())/(7*86400000));
-  const weightedMean=(rows,value)=>{let n=0,d=0;for(const x of rows){const v=Number(value(x));if(!Number.isFinite(v))continue;const w=recencyWeight(x);n+=v*w;d+=w}return d?n/d:null};
-  const learnedPayout=weightedMean(recentSignals.filter(o=>Number(o.payout)>0),o=>o.final_payout??o.payout);
-  const gaps=[];for(let i=1;i<recentSignals.length;i++){const g=(new Date(recentSignals[i].captured_at)-new Date(recentSignals[i-1].captured_at))/60000;if(g>.25&&g<60)gaps.push({captured_at:recentSignals[i].captured_at,value:g})}
-  const learnedWait=weightedMean(gaps,x=>x.value);
-  const todayActiveMinutes=todayCompleted.reduce((sum,o)=>{const ev=byOffer.get(o.id)||[],a=ev.find(e=>e.event==='accepted')?.captured_at,b=[...ev].reverse().find(e=>['delivered','completed'].includes(e.event))?.captured_at;if(!a||!b)return sum;const m=mins(a,b);return sum+(m>0&&m<240?m:0)},0);
-  const todayUtilization=todayOnlineMinutes?Math.min(1,todayActiveMinutes/todayOnlineMinutes):0;
-  // If historical skips failed to replace the skipped guaranteed cash, discount future waiting.
-  // Require meaningful samples before allowing skip-value optimism.
-  const skipRatio=skipDecisions.length?skipDecisions.filter(x=>x.advantage>0).length/skipDecisions.length:0;
-  const skipValueMultiplier=skipDecisions.length>=8?Math.max(.25,Math.min(1.25,.45+skipRatio)):0.55;
-  const completedMiles=todayCompleted.map(o=>Number(o.miles)).filter(x=>Number.isFinite(x)&&x>0),mileP80=completedMiles.length?[...completedMiles].sort((a,b)=>a-b)[Math.min(completedMiles.length-1,Math.floor(completedMiles.length*.8))]:null;
-  // Learn whether explicit declines are followed by longer-than-normal offer droughts.
-  const nextSignalGap=(at)=>{const t=new Date(at).getTime(),n=recentSignals.find(x=>new Date(x.captured_at).getTime()>t+1500);return n?Math.min(90,(new Date(n.captured_at).getTime()-t)/60000):null};
-  const declineGaps=skipDecisions.map(x=>nextSignalGap(x.decisionAt)).filter(x=>Number.isFinite(x));
-  const baselineGaps=gaps.map(x=>x.value).filter(x=>Number.isFinite(x));
-  const avg=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:null;
-  const declineGapAvg=avg(declineGaps),baselineGapAvg=avg(baselineGaps);
-  // Shrink toward no penalty until enough samples exist; cap it so correlation never becomes a fake certainty.
-  const declineEvidence=Math.min(1,declineGaps.length/20);
-  const rawDeclinePenalty=declineGapAvg!=null&&baselineGapAvg?Math.max(0,declineGapAvg-baselineGapAvg):0;
-  const declinePenaltyMinutes=Math.min(20,rawDeclinePenalty*declineEvidence);
-  const declinePenaltyCash=Math.min(12,(declinePenaltyMinutes/Math.max(1,learnedWait??8))*Math.max(0,learnedPayout??7.5));
-  const selfLearning={version:3,samples:recentSignals.length,expectedWaitMinutes:Number((learnedWait??8).toFixed(1)),expectedOfferPayout:Number((learnedPayout??7.5).toFixed(2)),todayUtilization:Number(todayUtilization.toFixed(3)),targetUtilization:.65,skipValueMultiplier:Number(skipValueMultiplier.toFixed(2)),skipOutcomeSamples:skipDecisions.length,declineSamples:declineGaps.length,declineGapMinutes:declineGapAvg==null?null:Number(declineGapAvg.toFixed(1)),baselineGapMinutes:baselineGapAvg==null?null:Number(baselineGapAvg.toFixed(1)),declinePenaltyMinutes:Number(declinePenaltyMinutes.toFixed(1)),declinePenaltyCash:Number(declinePenaltyCash.toFixed(2)),dispatchModel:{mode:'black_box_system_identification',objective:'maximize_final_daily_cash',recencyHalfLifeDays:7,learns:['offer_arrival','replacement_payout','post_decline_drought','utilization','location_context','time_context'],confidence:Number(Math.min(1,recentSignals.length/100).toFixed(2))},maxLowPayMiles:Number(Math.max(12,(mileP80??10)*1.5).toFixed(1)),lowPayFloor:15,maxLowPayMinutes:90,timeTrapPayFloor:18,absoluteMinPay:4};
-
+  const dispatchModel=buildDispatchModel({offers:signalOffers,events:events||[],presence:presence||[],shifts:shifts||[],now:Date.now(),vehicle:'ebike'});
   const zones={};for(const e of events||[]){if(!e.zone||e.zone==='Unknown')continue;const z=zones[e.zone]||={zone:e.zone,events:0,delivered:0};z.events++;if(e.event==='delivered')z.delivered++;zones[e.zone]=z}
-  return res.status(200).json({activeShift:active,onlineMinutes:Number(onlineMinutes.toFixed(1)),idleMinutes:Number(idleMinutes.toFixed(1)),offers:signalOffers.length,completed:completed.length,totalEarnings:Number(totalEarnings.toFixed(2)),todayEarnings:Number(todayEarnings.toFixed(2)),todayOrders,todayOnlineMinutes:Number(todayOnlineMinutes.toFixed(1)),todayOnlineDph:Number(todayOnlineDph.toFixed(2)),blockEarnings:Number(blockEarnings.toFixed(2)),currentBlock,offerPayout:Number(offerPayout.toFixed(2)),importedEarnings:Number(imported.toFixed(2)),onlineDph:onlineMinutes?Number((totalEarnings/(onlineMinutes/60)).toFixed(2)):0,monthlyGoal:Number(goals?.[0]?.monthly_goal||4000),merchantStats,radarAdvantage:radarAdvantageStats,selfLearning,zones:Object.values(zones),recentEvents:(events||[]).slice(-250).map(e=>{const o=(offers||[]).find(x=>x.id===e.offer_id);return {...e,merchant:o?.merchant||null,payout:o?.payout||null}}),todayCompleted:todayCompleted.slice(-50).map(o=>{const ev=byOffer.get(o.id)||[],accepted=ev.find(e=>e.event==='accepted'),delivered=[...ev].reverse().find(e=>['delivered','completed'].includes(e.event));return {id:o.id,merchant:o.merchant,payout:Number(o.final_payout??o.payout??0),miles:o.miles,state:o.state,captured_at:o.captured_at,accepted_at:accepted?.captured_at||null,delivered_at:delivered?.captured_at||null,zone:o.zone,dropoff_zone:o.dropoff_zone||null}})});
+  return res.status(200).json({activeShift:active,onlineMinutes:Number(onlineMinutes.toFixed(1)),idleMinutes:Number(idleMinutes.toFixed(1)),offers:signalOffers.length,completed:completed.length,totalEarnings:Number(totalEarnings.toFixed(2)),todayEarnings:Number(todayEarnings.toFixed(2)),todayOrders,todayOnlineMinutes:Number(todayOnlineMinutes.toFixed(1)),todayOnlineDph:Number(todayOnlineDph.toFixed(2)),blockEarnings:Number(blockEarnings.toFixed(2)),currentBlock,offerPayout:Number(offerPayout.toFixed(2)),importedEarnings:Number(imported.toFixed(2)),onlineDph:onlineMinutes?Number((totalEarnings/(onlineMinutes/60)).toFixed(2)):0,monthlyGoal:Number(goals?.[0]?.monthly_goal||4000),merchantStats,radarAdvantage:radarAdvantageStats,dispatchModel,zones:Object.values(zones),recentEvents:(events||[]).slice(-250).map(e=>{const o=(offers||[]).find(x=>x.id===e.offer_id);return {...e,merchant:o?.merchant||null,payout:o?.payout||null}}),todayCompleted:todayCompleted.slice(-50).map(o=>{const ev=byOffer.get(o.id)||[],accepted=ev.find(e=>e.event==='accepted'),delivered=[...ev].reverse().find(e=>['delivered','completed'].includes(e.event));return {id:o.id,merchant:o.merchant,payout:Number(o.final_payout??o.payout??0),miles:o.miles,state:o.state,captured_at:o.captured_at,accepted_at:accepted?.captured_at||null,delivered_at:delivered?.captured_at||null,zone:o.zone,dropoff_zone:o.dropoff_zone||null}})});
  }catch(error){return res.status(500).json({error:error.message})}
 }

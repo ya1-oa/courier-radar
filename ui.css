@@ -227,3 +227,9 @@ body:not(.has-actionable-offer) .live-map-view.active .order-drawer:not([open]){
 @media(prefers-reduced-motion:reduce){
  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
 }
+
+/* One navigation affordance is exposed only when the model has verified a move. */
+.live-map-view.active .route-to-target{display:inline-flex;margin-top:9px;align-items:center;justify-content:center;padding:0 12px;min-height:32px;width:auto;border-radius:9px;background:#263d2d;border:1px solid rgba(186,242,115,.28);color:var(--signal);font-size:10px;font-weight:760;letter-spacing:.06em;box-shadow:none}
+.live-map-view.active .route-to-target.hidden{display:none!important}
+.capture-help{margin-top:13px;padding:12px;border:1px solid var(--hair);border-radius:11px;background:#10191e}
+.capture-help summary{font-size:12px}.capture-help .hint{margin-top:10px}

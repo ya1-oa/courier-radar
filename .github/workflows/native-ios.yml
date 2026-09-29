@@ -1,0 +1,66 @@
+name: Native iOS Radar
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "ios/**"
+      - ".github/workflows/native-ios.yml"
+jobs:
+  native-build:
+    runs-on: macos-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Xcode and Swift toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+      - name: Swift core regression tests
+        run: swift test --package-path ios
+      - name: XcodeGen
+        run: brew install xcodegen
+      - name: Create iOS Xcode project and icon
+        working-directory: ios
+        run: xcodegen generate --spec project.yml
+      - name: Simulator compile
+        working-directory: ios
+        run: |
+          set -o pipefail
+          xcodebuild -project CourierRadar.xcodeproj -scheme CourierRadar \
+            -configuration Release -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build-simulator \
+            CODE_SIGNING_ALLOWED=NO build 2>&1 | tee simulator-build.log
+      - name: Build unsigned physical-device app
+        working-directory: ios
+        run: |
+          set -o pipefail
+          xcodebuild -project CourierRadar.xcodeproj -scheme CourierRadar \
+            -configuration Release -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build-device \
+            CODE_SIGNING_ALLOWED=NO build 2>&1 | tee device-build.log
+          mkdir -p Payload
+          cp -R build-device/Build/Products/Release-iphoneos/CourierRadar.app Payload/
+          zip -qr CourierRadar-unsigned.ipa Payload
+      - name: Upload unsigned IPA and Xcode project
+        uses: actions/upload-artifact@v4
+        with:
+          name: CourierRadar-iOS-unsigned-and-project
+          path: |
+            ios/CourierRadar-unsigned.ipa
+            ios/CourierRadar.xcodeproj/**
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload diagnostics if build fails
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: iOS-build-failure-logs
+          path: |
+            ios/simulator-build.log
+            ios/device-build.log
+          if-no-files-found: ignore

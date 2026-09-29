@@ -84,5 +84,18 @@ export default async function handler(req,res){
   effectiveBattery=body.batteryMiles??remainingBatteryMiles(policy,dispatchRows?.[0]||[]),
   decision=decideDispatchOffer({model:learned,offer:row,position:Number.isFinite(lat)&&Number.isFinite(lng)?{lat,lng}:null,now:Date.now(),remainingMinutes:Math.max(10,Math.min(180,Number(body.remainingMinutes)||workHorizon)),batteryMiles:effectiveBattery,dailyEarned:body.dailyEarned??null,dailyTarget:200,calibration:laDate===String(body.calibrationDay||policy.calibrationDay||'2026-09-29')}),
   verdict=decision.verdict;
+  if(dbConfigured()&&saved?.[0]?.id){
+   await insert('recommendation_logs',{
+    driver_id:driverId,context:'offer_decision',action:verdict,
+    zone_type:decision.zone||zone||null,confidence:decision.confidence??0,
+    reason:String(decision.reason||'').slice(0,800),time_block:timeBlock,
+    source:'dispatch_v4',origin_lat:Number.isFinite(lat)?lat:null,origin_lng:Number.isFinite(lng)?lng:null,
+    evidence:{offerId:saved[0].id,payout:row.payout,etaMinutes:row.eta_minutes,miles:row.miles,
+     takeValue:decision.takeValue??null,skipValue:decision.skipValue??null,
+     confidence:decision.confidence??null,mode:decision.mode,
+     afterDelivery:decision.afterDelivery||null,horizonMinutes:decision.horizonMinutes||null,
+     capturedAt:row.captured_at}
+   }).catch(()=>null);
+  }
   return res.status(200).json({ok:true,screen,duplicate,persisted:Boolean(saved),locationReceived:Boolean(Number.isFinite(lat)&&Number.isFinite(lng)),receivedLocation:{lat:Number.isFinite(lat)?lat:null,lng:Number.isFinite(lng)?lng:null},offerKind:parsed.offerKind,stackCount:parsed.stackCount,id:saved?.[0]?.id||null,parsed,rate:uberRate||radarRate,uberRate,radarRate,uberEtaMinutes:parsed.etaMinutes,radarEtaMinutes:Number.isFinite(radarEtaMinutes)?Number(radarEtaMinutes.toFixed(1)):null,speedMph,speedLevel,decision,verdict,zone,vehicle,timeBlock,marketCell,mode,destination:{text:dropoffText,lat:Number.isFinite(dropoffLat)?dropoffLat:null,lng:Number.isFinite(dropoffLng)?dropoffLng:null,zone:dropoffZone,marketCell:dropoffMarketCell,source:destinationSource,confidence:destinationConfidence}});
 }

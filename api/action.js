@@ -12,9 +12,9 @@ export default async function handler(req,res){
   if(!dbConfigured())return res.status(503).json({error:'Supabase is not configured'});
   const body=await bodyOf(req);
   try{
-    const recent=await select(`offers?driver_id=eq.${driverId}&order=captured_at.desc&limit=1&select=id,captured_at,state,vehicle,batch_id,offer_kind,stack_count,payout,final_payout`);
+    const recent=await select(`offers?driver_id=eq.${driverId}&state=in.(accepted,arrived,picked_up,observed)&order=captured_at.desc&limit=10&select=id,captured_at,state,vehicle,batch_id,offer_kind,stack_count,payout,final_payout`);
     if(!recent?.length)return res.status(404).json({error:'No recent offer'});
-    const offer=recent[0],requested=String(body.state||body.event||'next').toLowerCase();
+    const active=recent.find(o=>['accepted','arrived','picked_up'].includes(o.state)),offer=active||recent[0],requested=String(body.state||body.event||'next').toLowerCase();
     let state=requested==='next'?(NEXT[offer.state]||null):(VALID.has(requested)?requested:null);
     // A stacked Uber offer stays PICKED_UP while intermediate drop-offs are recorded.
     // Each Radar Next at a drop-off stores its own GPS/zone; only the final stop closes the batch.

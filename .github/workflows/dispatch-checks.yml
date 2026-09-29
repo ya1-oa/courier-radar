@@ -1,0 +1,24 @@
+name: Radar dispatch checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Parse runtime JavaScript
+        run: |
+          node --check lib-dispatch.js
+          node --check app.js
+          node --check api/stats.js
+          node --check api/capture.js
+          node --check api/earnings.js
+      - name: Run dispatch regression tests
+        run: node --test tests/*.test.js

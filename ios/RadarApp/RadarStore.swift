@@ -216,6 +216,39 @@ enum RadarTab:Hashable {case live,history,stats,settings}
             lastPredictionDisagreement=native.kind.rawValue != result.verdict
         }
     }
+    /// Explicit, non-observed record. Does not train offer-arrival statistics.
+    /// The same client ID is reused if the server times out and the user retries.
+    func recover(_ draft:MissedOrderDraft) async -> Bool {
+        guard !isActing else{return false}
+        isActing=true
+        defer{isActing=false}
+        do {
+            let api=try endpoint()
+            let formatter=ISO8601DateFormatter()
+            formatter.formatOptions=[.withInternetDateTime,.withFractionalSeconds]
+            var body:[String:Any]=[
+                "clientId":draft.clientId,
+                "merchant":draft.merchant,
+                "payout":draft.payout,
+                "state":draft.state,
+                "acceptedAt":formatter.string(from:draft.acceptedAt)
+            ]
+            if let miles=draft.miles{body["miles"]=miles}
+            if let minutes=draft.etaMinutes{body["etaMinutes"]=minutes}
+            if let finishedAt=draft.finishedAt{body["finishedAt"]=formatter.string(from:finishedAt)}
+            let result:RecoverPayload=try await api.post("/api/recover",json:body)
+            guard result.ok==true else {throw RadarAPIError.invalidData}
+            captureState=result.state=="delivered" ?
+                "Recovered \(result.merchant ?? draft.merchant) as completed.":
+                "Recovered \(result.merchant ?? draft.merchant). Continue at \(result.state ?? draft.state)."
+            status="Recovered order saved"
+            await refresh()
+            return true
+        }catch {
+            self.error=error.localizedDescription
+            return false
+        }
+    }
     func syncUberTotal(_ amount:Double) async {
         guard amount>=0,amount<=5000 else{error="Enter Uber's displayed daily total.";return}
         do {
@@ -273,3 +306,11 @@ enum RadarTab:Hashable {case live,history,stats,settings}
     }
 }
 private struct LocationAccepted:Decodable {let ok:Bool?;let persisted:Bool?}
+
+private struct RecoverPayload:Decodable {
+    let ok:Bool?
+    let id:String?
+    let state:String?
+    let merchant:String?
+    let manual:Bool?
+}

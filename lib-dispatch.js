@@ -23,12 +23,13 @@ const anchors=[
  ['Sawtelle',34.037,-118.449],['Brentwood',34.052,-118.474]
 ];
 export function milesBetween(a,b,c,d){
- if(![a,b,c,d].every(v=>Number.isFinite(Number(v))))return Infinity;
+ if([a,b,c,d].some(v=>v==null||v===''||!Number.isFinite(Number(v))))return Infinity;
  const r=Math.PI/180,p=(Number(c)-Number(a))*r,q=(Number(d)-Number(b))*r;
  return 3958.76*2*Math.asin(Math.sqrt(Math.sin(p/2)**2+Math.cos(Number(a)*r)*Math.cos(Number(c)*r)*Math.sin(q/2)**2));
 }
 export function dispatchZone(lat,lng){
- const y=Number(lat),x=Number(lng);if(!Number.isFinite(y)||!Number.isFinite(x)||Math.abs(y)>90||Math.abs(x)>180)return null;
+ if(lat==null||lng==null||lat===''||lng==='')return null;
+ const y=Number(lat),x=Number(lng);if(!Number.isFinite(y)||!Number.isFinite(x)||Math.abs(y)>90||Math.abs(x)>180||Math.abs(y)<1||Math.abs(x)<1)return null;
  let closest=null,dist=Infinity;
  for(const a of anchors){const d=milesBetween(y,x,a[1],a[2]);if(d<dist){dist=d;closest=a}}
  // Broad zone, not an individual restaurant or arbitrary sub-400m hex. Avoid moving for 1 block difference.
@@ -41,7 +42,6 @@ const isRealOffer=o=>val(o.payout)>0&&val(o.eta_minutes)>0&&val(o.payout)<200&&v
 const isBusy=s=>['accepted','arrived','picked_up'].includes(String(s));
 const weighted=(rows,key,now)=>{let n=0,d=0;for(const r of rows){const v=val(key(r),NaN),w=decay(ms(r.captured_at),now);if(Number.isFinite(v)&&Number.isFinite(w)){n+=v*w;d+=w}}return d?n/d:null};
 const signature=r=>String(r.zone||'')+'|'+String(r.block||'');
-const freshPosition=(p,now)=>ms(p.captured_at)<=now&&ms(p.captured_at)>=now-4*MIN;
 export function buildDispatchModel({offers=[],events=[],presence=[],shifts=[],now=Date.now(),vehicle='ebike'}={}){
  const t=now instanceof Date?now.getTime():Number(now),since=t-30*DAY,usableShifts=(shifts||[]).filter(s=>ms(s.started_at)<t&&ms(s.ended_at||new Date(t))>since).map(s=>({a:Math.max(since,ms(s.started_at)),b:Math.min(t,ms(s.ended_at||new Date(t)))}));
  const eventMap=new Map();
@@ -59,7 +59,6 @@ export function buildDispatchModel({offers=[],events=[],presence=[],shifts=[],no
  busy.sort((a,b)=>a.a-b.a);
  const busyAt=t=>busy.some(w=>t>=w.a&&t<w.b);
  const inShift=t=>usableShifts.some(w=>t>=w.a&&t<w.b);
- const pings=(presence||[]).filter(p=>ms(p.captured_at)>=since&&ms(p.captured_at)<=t&&!/shift_end|offline|end/i.test(String(p.event||''))&&zoneFrom(p)&&!p.vehicle||false);
  // Explicit parentheses matter: never silently treat foreign vehicle telemetry as personal exposure.
  const validPings=(presence||[]).filter(p=>ms(p.captured_at)>=since&&ms(p.captured_at)<=t&&zoneFrom(p)&&!/(shift_end|offline)/i.test(String(p.event||''))&&(!p.vehicle||p.vehicle===vehicle)).sort((a,b)=>ms(a.captured_at)-ms(b.captured_at));
  const exposures=[],byKey=new Map(),global=new Map();

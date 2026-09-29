@@ -162,12 +162,13 @@ enum RadarTab:Hashable {case live,history,stats,settings}
             await refresh()
         }catch{self.error=error.localizedDescription}
     }
-    func mark(_ state:String="next") async {
+    func mark(_ state:String="next",offerId:String?=nil) async {
         guard !isActing else{return}
         isActing=true;defer{isActing=false}
         do {
             let api=try endpoint()
             var body:[String:Any]=["state":state,"vehicle":prefs.vehicle]
+            if let offerId {body["offerId"]=offerId}
             if let fix=gps.point,fix.isValid {
                 body["lat"]=fix.lat;body["lng"]=fix.lng
             }

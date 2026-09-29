@@ -41,6 +41,9 @@ enum RadarTab:Hashable {case live,history,stats,settings}
         gps.onPing = { [weak self] ping in
             guard let self else{return}
             self.queuePing(ping)
+            if self.recommendations["wait"]?.zone != MarketZone.identify(self.gps.point) {
+                self.updateDecisions()
+            }
         }
     }
     var authReady:Bool { !RadarKeychain.load().isEmpty }
@@ -72,10 +75,31 @@ enum RadarTab:Hashable {case live,history,stats,settings}
                     history:offers,policy:policyNow())
     }
     func decide(_ offer:RadarOffer) -> CashDecision {
-        engine().offerDecision(offer,position:gps.point)
+        recommendations[offer.id] ?? engine().offerDecision(offer,position:gps.point)
     }
     var waitAdvice:CashDecision {
-        engine().waitDecision(position:gps.point,active:activeOffer != nil)
+        recommendations["wait"] ?? CashDecision(kind:.wait,
+            reason:"Waiting for location and offer history before evaluating a move.")
+    }
+    private func updateDecisions() {
+        let planner=engine()
+        var result:[String:CashDecision]=[:]
+        var wait=planner.waitDecision(position:gps.point,active:activeOffer != nil)
+        if wait.kind == .move,
+           let prior=offers.first(where:{["delivered","completed"].contains($0.state ?? "")}),
+           let origin=MarketZone.identify(prior.pickupPoint),
+           origin==wait.destination {
+            wait.kind = .returning
+            wait.reason = "Returning toward a previously productive pickup area. "+wait.reason
+        }
+        result["wait"]=wait
+        if let latest=latestOffer,latest.state=="observed" {
+            result[latest.id]=planner.offerDecision(latest,position:gps.point)
+        }
+        if let active=activeOffer {
+            result[active.id]=planner.offerDecision(active,position:gps.point)
+        }
+        recommendations=result
     }
     private func endpoint() throws -> RadarEndpoint {
         try RadarEndpoint(server:prefs.server,token:RadarKeychain.load())
@@ -107,6 +131,7 @@ enum RadarTab:Hashable {case live,history,stats,settings}
             shiftActive=newStats.activeShift != nil
             if shiftActive && !gps.recording {gps.start(vehicle:prefs.vehicle)}
             if !shiftActive && gps.recording {gps.stop()}
+            updateDecisions()
             error=nil;status="Synced";lastSync=Date()
             await flushGPS()
         } catch {

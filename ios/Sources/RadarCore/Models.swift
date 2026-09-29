@@ -191,14 +191,16 @@ public struct CashDecision: Sendable {
     public var modelConfidence:Double
     public var zone:String?
     public var destination:String?
+    public var afterDelivery:String?
     public var expectedAdvantage:Double?
     public var expectedWaitMinutes:Double?
     public init(kind:RecommendationKind,reason:String,takeValue:Double?=nil,
                 skipValue:Double?=nil,modelConfidence:Double=0,zone:String?=nil,
-                destination:String?=nil,expectedAdvantage:Double?=nil,
-                expectedWaitMinutes:Double?=nil) {
+                destination:String?=nil,afterDelivery:String?=nil,
+                expectedAdvantage:Double?=nil,expectedWaitMinutes:Double?=nil) {
         self.kind=kind;self.reason=reason;self.takeValue=takeValue;self.skipValue=skipValue
         self.modelConfidence=modelConfidence;self.zone=zone;self.destination=destination
+        self.afterDelivery=afterDelivery
         self.expectedAdvantage=expectedAdvantage;self.expectedWaitMinutes=expectedWaitMinutes
     }
 }

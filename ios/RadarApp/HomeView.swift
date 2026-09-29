@@ -5,6 +5,7 @@ import RadarCore
 
 struct HomeView:View {
     @EnvironmentObject private var store:RadarStore
+    @EnvironmentObject private var tracker:LocationTracker
     @State private var camera:MapCameraPosition = .region(
         MKCoordinateRegion(center:CLLocationCoordinate2D(latitude:34.0211,longitude:-118.3965),
                            span:MKCoordinateSpan(latitudeDelta:0.035,longitudeDelta:0.035)))
@@ -19,12 +20,9 @@ struct HomeView:View {
         }
     }
     private var presentOffer:RadarOffer? {
-        if let active=store.activeOffer{return active}
-        guard let offer=store.latestOffer,
-              offer.state=="observed",
-              let at=offer.capturedAt,
-              Date().timeIntervalSince(at)<180 else{return nil}
-        return offer
+        if let offer=store.latestOffer,offer.state=="observed",
+           let at=offer.capturedAt,Date().timeIntervalSince(at)<180 {return offer}
+        return store.activeOffer
     }
     private var currentDecision:CashDecision? {
         presentOffer.map{store.decide($0)}
@@ -156,7 +154,7 @@ struct HomeView:View {
             .padding(.horizontal,12).padding(.top,12).padding(.bottom,12)
         }
         .background(RadarStyle.background)
-        .onChange(of:store.gps.point){_,value in
+        .onChange(of:tracker.point){_,value in
             guard !followedOnce,let point=value,point.isValid else{return}
             followedOnce=true
             camera = .region(MKCoordinateRegion(center:CLLocationCoordinate2D(
@@ -252,6 +250,11 @@ struct HomeView:View {
                     Text(decision.reason)
                         .font(.system(size:11)).foregroundStyle(RadarStyle.subtle)
                         .lineLimit(activeOfferExpanded ? nil:2)
+                    if let after=decision.afterDelivery {
+                        Text("AFTER DROPOFF → "+after.uppercased())
+                            .font(.system(size:10,weight:.bold))
+                            .foregroundStyle(RadarStyle.signal)
+                    }
                     HStack(spacing:12){
                         Label("\(Money.number(offer.miles)) mi",systemImage:"point.topleft.down.curvedto.point.bottomright.up")
                         Label("\(Int(offer.tripETA)) min",systemImage:"clock")

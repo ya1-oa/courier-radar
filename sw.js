@@ -1,5 +1,5 @@
-const CACHE='courier-radar-v50-dispatch';
-const STATIC=['/','/styles.css','/app.js','/map.js','/lib-network.js','/lib-dispatch.js','/manifest.webmanifest','/icon.svg'];
+const CACHE='courier-radar-v53-unified-capture';
+const STATIC=['/','/styles.css','/app.js','/map.js','/lib-network.js','/lib-dispatch.js','/lib-screen.js','/ui.css','/manifest.webmanifest','/icon.svg'];
 
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(STATIC)).then(()=>self.skipWaiting()));

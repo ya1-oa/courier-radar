@@ -7,7 +7,7 @@ const RADAR_PREFS='radar_week_policy_v1';
 const policyPrefs=()=>{try{return {calibrationDay:'2026-09-29',stopTime:'01:00',batteryMiles:null,...JSON.parse(localStorage.getItem(RADAR_PREFS)||'{}')}}catch{return {calibrationDay:'2026-09-29',stopTime:'01:00',batteryMiles:null}}};
 const savePolicyPrefs=v=>localStorage.setItem(RADAR_PREFS,JSON.stringify({...policyPrefs(),...v}));
 const laDay=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Los_Angeles',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-const trainingDay=()=>laDay()===policyPrefs().calibrationDay;
+const trainingDay=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Los_Angeles',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(Date.now()-4*3600000))===policyPrefs().calibrationDay;
 function workMinutesLeft(){const [h,m]=String(policyPrefs().stopTime||'01:00').split(':').map(Number),p=new Intl.DateTimeFormat('en-US',{timeZone:'America/Los_Angeles',hourCycle:'h23',hour:'2-digit',minute:'2-digit'}).formatToParts(new Date()),now=Number(p.find(x=>x.type==='hour')?.value||0)*60+Number(p.find(x=>x.type==='minute')?.value||0),stop=(h||0)*60+(m||0);return Math.max(10,(stop>now?stop:stop+1440)-now)}
 const model=()=>statsData?.dispatchModel||null;
 const batteryRemaining=()=>remainingBatteryMiles(policyPrefs(),offers);

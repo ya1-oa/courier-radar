@@ -13,6 +13,8 @@ struct HomeView:View {
     @State private var selectedScreenshot:PhotosPickerItem?
     @State private var activeOfferExpanded=false
     @State private var confirmFinish=false
+    @State private var showingRecovery=false
+    @State private var finishOfferId:String?
 
     private var zones:[DispatchZone] {
         (store.stats?.dispatchModel?.zones ?? []).filter {
@@ -127,6 +129,13 @@ struct HomeView:View {
                             .background(RadarStyle.surface,in:RoundedRectangle(cornerRadius:13))
                     }
                     .disabled(store.isActing)
+                    Button{showingRecovery=true}label:{
+                        Label("RECOVER",systemImage:"arrow.uturn.backward")
+                            .font(.system(size:11,weight:.bold))
+                            .frame(maxWidth:.infinity,minHeight:47)
+                            .foregroundStyle(RadarStyle.signal)
+                            .background(RadarStyle.surface,in:RoundedRectangle(cornerRadius:13))
+                    }.buttonStyle(.plain)
                     Button{
                         Task{store.shiftActive ? await store.endShift():await store.startShift()}
                     }label:{
@@ -170,9 +179,10 @@ struct HomeView:View {
                 selectedScreenshot=nil
             }
         }
+        .sheet(isPresented:$showingRecovery){MissedOrderView()}
         .confirmationDialog("Mark delivered in Radar?",
             isPresented:$confirmFinish,titleVisibility:.visible){
-            Button("Uber delivery is finished"){Task{await store.mark("next")}}
+            Button("Uber delivery is finished"){Task{await store.mark("next",offerId:finishOfferId)}}
             Button("Cancel",role:.cancel){}
         }message:{Text("Only mark delivered after Uber confirms completion.")}
     }
@@ -268,8 +278,8 @@ struct HomeView:View {
                 HStack(spacing:8){
                     RadarActionButton(title:nextStageLabel(offer.state),systemImage:"checkmark.circle.fill",
                                       highlighted:true,disabled:store.isActing){
-                        if offer.state=="picked_up"{confirmFinish=true}
-                        else{Task{await store.mark("next")}}
+                        if offer.state=="picked_up"{finishOfferId=offer.id;confirmFinish=true}
+                        else{Task{await store.mark("next",offerId:offer.id)}}
                     }
                     Button{activeOfferExpanded.toggle()}label:{
                         Image(systemName:activeOfferExpanded ? "chevron.up":"ellipsis")
@@ -280,10 +290,10 @@ struct HomeView:View {
                 if activeOfferExpanded {
                     HStack {
                         RadarActionButton(title:"DECLINED",systemImage:"xmark",disabled:store.isActing){
-                            Task{await store.mark("rejected")}
+                            Task{await store.mark("rejected",offerId:offer.id)}
                         }
                         RadarActionButton(title:"CANCELLED",systemImage:"xmark.circle",disabled:store.isActing){
-                            Task{await store.mark("cancelled")}
+                            Task{await store.mark("cancelled",offerId:offer.id)}
                         }
                     }
                 }

@@ -49,6 +49,12 @@
 <div class="field compact"><label>Planned stop time</label><input id="radarStopTime" type="time" value="01:00"><small>Cash model uses this as its working horizon.</small></div></div>
 <div class="field compact"><label>E-bike estimated miles remaining (optional)</label><input id="batteryMilesLeft" inputmode="decimal" type="number" min="0" max="100" step=".5" placeholder="Enter actual remaining range"><small>Unknown means Radar cannot promise battery-safe routes. Update after charging.</small></div>
 <button id="saveDispatchSettings" class="ghost full">Save dispatch settings</button><p class="hint" id="dispatchPrefsStatus">Calibration will automatically end after its date.</p></section>
+<section class="card capture-setup"><div class="section-head"><div><div class="eyebrow">CAPTURE AUTOMATION</div><h2>One tap from Uber</h2></div></div>
+<p class="hint">iPhone Back Tap → screenshot → local text extraction → Radar. Offer capture and recognizable lifecycle screens use the same endpoint. No Uber credentials or network interception.</p>
+<div class="field compact"><label>Capture endpoint</label><input id="captureEndpoint" type="text" readonly placeholder="Loading capture URL"></div>
+<button id="copyCaptureEndpoint" type="button" class="ghost full">Copy endpoint</button>
+<details class="capture-help"><summary>iPhone Shortcut setup</summary><p class="hint">In Shortcuts: Take Screenshot → Extract Text from Image → Get Current Location → Get Contents of URL (POST to endpoint; JSON text = recognized text; optional lat/lng). Headers: Content-Type application/json and x-capture-token your private Radar token. Show Notification using verdict or state. Then Settings → Accessibility → Touch → Back Tap → Double Tap → Radar Capture. A screenshot of a pickup or dropoff screen can advance the lifecycle when the preceding step is already recorded.</p><p class="hint">Screenshots still require your tap. Full background capture requires a separate permissioned native iPhone app; this PWA cannot read Uber's screen or encrypted HTTPS messages.</p></details>
+</section>
 </div>
 
 <div class="view" data-view="money">

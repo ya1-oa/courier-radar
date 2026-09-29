@@ -83,12 +83,30 @@ export function buildDispatchModel({offers=[],events=[],presence=[],shifts=[],no
   const g=byKey.get(zone+'|'+block);
   if(g&&Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng))){const w=decay(at,t);g.latSum+=Number(p.lat)*w;g.lngSum+=Number(p.lng)*w;g.coordWeight+=w}
  }
+ // Estimate stationary waiting only when two consecutive GPS-bearing observations bracket the same zone.
+ // These minutes are down-weighted and never labeled GPS-verified.
+ const verifiedMinutes=[...byKey.values()].reduce((sum,g)=>sum+g.minutes,0);
+ let inferredMinutes=0;
+ const anchors=[...validPings,...unique,...(events||[]).filter(e=>e.lat!=null&&e.lng!=null)]
+  .filter(x=>zoneFrom(x)&&Number.isFinite(ms(x.captured_at))).sort((a,b)=>ms(a.captured_at)-ms(b.captured_at));
+ for(let i=1;i<anchors.length;i++){
+  const left=anchors[i-1],right=anchors[i],a=ms(left.captured_at),b=ms(right.captured_at),zone=zoneFrom(left);
+  if(zone!==zoneFrom(right)||b<=a||b-a>35*MIN||!inShift(a)||!inShift(Math.max(a,b-1000)))continue;
+  for(let x=a;x<b;x+=MIN){
+   const end=Math.min(b,x+MIN),mid=(x+end)/2;
+   if(!inShift(mid)||busyAt(mid)||exposures.some(w=>mid>=w.a&&mid<w.b))continue;
+   const effective=.45*(end-x)/MIN;
+   record(zone,dispatchBlock(mid),mid,effective);
+   inferredMinutes+=effective*decay(mid,t);
+   exposures.push({a:x,b:end,zone,block:dispatchBlock(mid),inferred:true});
+  }
+ }
  const observed=unique.filter(o=>{
   const at=ms(o.captured_at);return !busyAt(at)&&inShift(at)&&exposures.some(x=>at>=x.a-15000&&at<=x.b+15000);
  });
  for(const o of observed){
   const zone=zoneFrom(o),block=dispatchBlock(o.captured_at),key=zone+'|'+block,g=byKey.get(key),all=global.get(block);
-  if(!g||!all)continue;const w=decay(ms(o.captured_at),t);g.offers+=w;all.offers+=w;
+  if(!g||!all)continue;const matched=exposures.find(x=>ms(o.captured_at)>=x.a-15000&&ms(o.captured_at)<=x.b+15000&&!x.inferred),factor=matched?1:.45,w=decay(ms(o.captured_at),t)*factor;g.offers+=w;all.offers+=w;
   for(const z of [g,all]){z.reward+=w*val(o.payout);z.rewardWeight+=w;z.duration+=w*val(o.eta_minutes);z.durationWeight+=w}
  }
  // Global offer flow uses rider-started shifts even when iOS suspends background GPS.
@@ -128,7 +146,7 @@ export function buildDispatchModel({offers=[],events=[],presence=[],shifts=[],no
  const mean=a=>a.length?a.reduce((sum,x)=>sum+x,0)/a.length:0;
  const penaltyEvidence=Math.min(1,postGaps.length/20);
  const declineExtraMinutes=postGaps.length>=10&&baselineGaps.length>=20?clamp((mean(postGaps)-mean(baselineGaps))*penaltyEvidence,0,8):0;
- return {version:4,trainedAt:new Date(t).toISOString(),windowDays:30,vehicle,offersCaptured:unique.length,offersObservedAvailable:observed.length,verifiedAvailableMinutes:+[...byKey.values()].reduce((s,x)=>s+x.minutes,0).toFixed(1),shiftAvailableMinutes:+onlineAvailable.toFixed(1),globalObservedOffers:+globalOffers.toFixed(1),gpsSamples:validPings.length,completedWindows:busy.length,pooled:{rate:globalRate,payout:observedPayout,duration:observedDuration},zones,decline:{sampleSize:postGaps.length,baselineSize:baselineGaps.length,observedExcessMinutes:+declineExtraMinutes.toFixed(1),isCausal:false},limitations:['Only foreground/recent GPS pings count as availability','No access to Uber queue or other couriers','Offers captured incompletely bias learned arrival rates','Decline associations are observational']};
+ return {version:4,trainedAt:new Date(t).toISOString(),windowDays:30,vehicle,offersCaptured:unique.length,offersObservedAvailable:observed.length,verifiedAvailableMinutes:+verifiedMinutes.toFixed(1),inferredZoneMinutes:+inferredMinutes.toFixed(1),shiftAvailableMinutes:+onlineAvailable.toFixed(1),globalObservedOffers:+globalOffers.toFixed(1),gpsSamples:validPings.length,completedWindows:busy.length,pooled:{rate:globalRate,payout:observedPayout,duration:observedDuration},zones,decline:{sampleSize:postGaps.length,baselineSize:baselineGaps.length,observedExcessMinutes:+declineExtraMinutes.toFixed(1),isCausal:false},limitations:['Only foreground/recent GPS pings count as availability','No access to Uber queue or other couriers','Offers captured incompletely bias learned arrival rates','Decline associations are observational']};
 }
 export function zoneEstimate(model,zone,block){
  const z=(model?.zones||[]).find(x=>x.zone===zone&&x.block===block),prior=model?.pooled||{rate:1/16,payout:7.5,duration:24};

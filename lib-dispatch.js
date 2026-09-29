@@ -164,7 +164,7 @@ export function decideDispatchWait({model,position,now=Date.now(),remainingMinut
  if(!position||zone==null)return {advice:'WAIT',reason:'Location unavailable. Do not travel to an unverified hotspot.',zone:null};
  if(calibration)return {advice:'WAIT',reason:'Calibration: hold a stable waiting area to measure actual offer arrivals.',zone};
  if(here.availableMinutes<40||here.offers<3)return {advice:'WAIT',reason:'No reliable local exposure comparison yet. Stay online; avoid speculative deadhead.',zone,confidence:here.confidence};
- const base=futureCash(here,h),choices=(model?.zones||[]).filter(z=>z.block===block&&z.zone!==zone&&z.sampled&&Number.isFinite(z.lat)&&Number.isFinite(z.lng));
+ const base=futureCash(here,h),choices=(model?.zones||[]).filter(z=>z.block===block&&z.zone!==zone&&z.sampled&&z.availableMinutes>=45&&z.offers>=4&&Number.isFinite(z.lat)&&Number.isFinite(z.lng));
  let winner=null;
  for(const dest of choices){
   const miles=milesBetween(position.lat,position.lng,dest.lat,dest.lng),travel=travelMinutes(miles);

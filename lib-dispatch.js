@@ -49,7 +49,7 @@ export function buildDispatchModel({offers=[],events=[],presence=[],shifts=[],no
  for(const group of eventMap.values())group.sort((a,b)=>ms(a.captured_at)-ms(b.captured_at));
  const raw=(offers||[]).filter(o=>isRealOffer(o)&&ms(o.captured_at)>=since&&ms(o.captured_at)<=t).sort((a,b)=>ms(a.captured_at)-ms(b.captured_at));
  const unique=[],duplicateIds=new Set();
- for(const o of raw){const previous=unique.at(-1);if(previous&&fingerprint(previous)===fingerprint(o)&&ms(o.captured_at)-ms(previous.captured_at)<150000){duplicateIds.add(o.id);continue}unique.push(o)}
+ for(const o of raw){if(o.source==='manual_recovery')continue;const previous=unique.at(-1);if(previous&&fingerprint(previous)===fingerprint(o)&&ms(o.captured_at)-ms(previous.captured_at)<150000){duplicateIds.add(o.id);continue}unique.push(o)}
  const busy=[];
  for(const o of raw){
   const e=eventMap.get(o.id)||[],accept=e.find(x=>x.event==='accepted'),end=e.find(x=>['delivered','completed','cancelled'].includes(x.event));

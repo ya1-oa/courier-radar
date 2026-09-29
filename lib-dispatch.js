@@ -177,3 +177,19 @@ export function decideDispatchWait({model,position,now=Date.now(),remainingMinut
  if(winner)return {advice:winner.zone===lastOriginZone?'RETURN':'MOVE',reason:'Personal available-time and offer evidence supports a net cash advantage after travel cost and uncertainty.',zone,target:winner,confidence:winner.confidence};
  return {advice:'WAIT',reason:'Staying has better evidence than paying battery/time to relocate. Review again after more available minutes.',zone,confidence:here.confidence,expectedWaitMinutes:+(1/Math.max(.004,here.rate)).toFixed(1),observedAvailableMinutes:here.availableMinutes};
 }
+
+// A conservative mileage budget, not a voltage-to-range measurement. Update after charging.
+export function remainingBatteryMiles(policy,orders=[]){
+ if(policy?.batteryMiles==null||policy?.batteryMiles==='')return null;
+ const starting=Number(policy.batteryMiles);if(!Number.isFinite(starting))return null;
+ const at=ms(policy.batteryRecordedAt),seen=new Map();let used=0;
+ for(const o of orders){
+  if(!['accepted','arrived','picked_up','delivered','completed'].includes(String(o.state||'')))continue;
+  const time=ms(o.captured_at);if(Number.isFinite(at)&&time<at)continue;
+  const key=fingerprint(o),prior=seen.get(key);
+  if(prior!=null&&Math.abs(time-prior)<180000)continue;
+  seen.set(key,time);
+  used+=Math.max(0,val(o.miles));
+ }
+ return +Math.max(0,starting-used*1.2).toFixed(1);
+}

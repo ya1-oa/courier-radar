@@ -1,5 +1,5 @@
 import { initRadarMap, updateRadarMap, centerRadarMap } from './map.js';
-import { decideDispatchOffer,decideDispatchWait,dispatchZone } from './lib-dispatch.js';
+import { decideDispatchOffer,decideDispatchWait,dispatchZone,remainingBatteryMiles } from './lib-dispatch.js';
 
 const $=id=>document.getElementById(id),TOKEN_KEY='radar_token',PROFILE_KEY='radar_profile',SHIFT_KEY='radar_shift',ONBOARD_KEY='radar_onboard_v1',GOALS_KEY='radar_goals_v1';
 let offers=[],statsData=null,clusters=[],position=null,startPlan=null,startPlanAt=0,selectedZone=null,lastLoggedRecommendation='',scanInFlight=false,scanCompleteTimer=null,network={personal:[],market:[],networkCoverage:'learning'},heartbeat=null,onboardStep=0,riderSettings={target_dph:35,speed_low_mph:12,speed_mid_mph:16,speed_high_mph:20,active_speed_level:'high',service_overhead_minutes:4.5,vehicle:'ebike',acceptance_rate_current:69,acceptance_rate_floor:30};
@@ -10,7 +10,7 @@ const laDay=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Los_Angeles',
 const trainingDay=()=>laDay()===policyPrefs().calibrationDay;
 function workMinutesLeft(){const [h,m]=String(policyPrefs().stopTime||'01:00').split(':').map(Number),p=new Intl.DateTimeFormat('en-US',{timeZone:'America/Los_Angeles',hourCycle:'h23',hour:'2-digit',minute:'2-digit'}).formatToParts(new Date()),now=Number(p.find(x=>x.type==='hour')?.value||0)*60+Number(p.find(x=>x.type==='minute')?.value||0),stop=(h||0)*60+(m||0);return Math.max(10,(stop>now?stop:stop+1440)-now)}
 const model=()=>statsData?.dispatchModel||null;
-const batteryRemaining=()=>policyPrefs().batteryMiles===null||policyPrefs().batteryMiles===''?null:Number(policyPrefs().batteryMiles);
+const batteryRemaining=()=>remainingBatteryMiles(policyPrefs(),offers);
 const defaults={vehicle:'ebike',target:35,radius:2.5};const goalDefaults={daily:200,blocks:{BREAKFAST:0,LUNCH:0,AFTERNOON:0,DINNER:0,LATE:0,'OFF-PEAK':0}};const goals=()=>{try{return {...goalDefaults,...JSON.parse(localStorage.getItem(GOALS_KEY)||'{}'),blocks:{...goalDefaults.blocks,...(JSON.parse(localStorage.getItem(GOALS_KEY)||'{}').blocks||{})}}}catch{return goalDefaults}};
 const profile=()=>{try{return {...defaults,...JSON.parse(localStorage.getItem(PROFILE_KEY)||'{}')}}catch{return {...defaults}}};
 const saveProfile=p=>localStorage.setItem(PROFILE_KEY,JSON.stringify({...profile(),...p}));
@@ -137,7 +137,7 @@ async function refreshData(){
   offers=f.offers||offers;
   render();renderStats();
   const settings=await api('/api/settings').catch(()=>null);
-  if(settings?.settings){riderSettings={...riderSettings,...settings.settings};saveProfile({target:Number(riderSettings.target_dph||35),vehicle:riderSettings.vehicle||profile().vehicle});renderRiderSettings();}
+  if(settings?.settings){if(settings.settings.dispatch_policy&&Object.keys(settings.settings.dispatch_policy).length)savePolicyPrefs(settings.settings.dispatch_policy);riderSettings={...riderSettings,...settings.settings};saveProfile({target:Number(riderSettings.target_dph||35),vehicle:riderSettings.vehicle||profile().vehicle});renderRiderSettings();}
   const p=profile();
   const n=await api(`/api/network?hours=168&vehicle=${encodeURIComponent(p.vehicle)}&target=${Number(riderSettings.target_dph||p.target)}`).catch(()=>null);
   if(n)network=n;

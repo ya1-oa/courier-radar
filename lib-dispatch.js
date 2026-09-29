@@ -120,7 +120,7 @@ export function zoneEstimate(model,zone,block){
  return {zone,block,availableMinutes:0,offers:0,offersPerHour:+(prior.rate*60).toFixed(1),rate:clamp(prior.rate,.004,.33),payout:prior.payout,duration:prior.duration,confidence:0,sampled:false,lat:null,lng:null};
 }
 const cashRate=z=>val(z.payout)/(1/Math.max(.004,val(z.rate,.05))+Math.max(8,val(z.duration,24)));
-const futureCash=(z,minutes)=>cashRate(z)*Math.max(0,minutes); // finite horizon baseline
+const futureCash=(z,minutes)=>cashRate(z)*Math.max(0,Math.min(180,minutes)); // finite horizon baseline
 const travelMinutes=(miles,speed=11)=>Math.max(0,miles)/clamp(speed,6,20)*60+2;
 function destinations(model,offer,homeZone,block,eta,batteryMiles,lookahead){
  const remaining=Math.max(0,lookahead-eta),home=zoneEstimate(model,homeZone,block);

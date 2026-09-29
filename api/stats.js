@@ -19,7 +19,7 @@ export default async function handler(req,res){
   const byOffer=new Map(); for(const e of events||[]){if(!byOffer.has(e.offer_id))byOffer.set(e.offer_id,[]);byOffer.get(e.offer_id).push(e)}
   const completed=signalOffers.filter(o=>['delivered','completed'].includes(o.state));
   const offerPayout=completed.reduce((s,o)=>s+Number(o.final_payout??o.payout??0),0);
-  const laDate=d=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Los_Angeles',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(d));
+  const laDate=d=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Los_Angeles',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(new Date(d).getTime()-4*3600000));
   const todayKey=laDate(new Date()),todayCompleted=completed.filter(o=>laDate(o.captured_at)===todayKey),todayOfferPayout=todayCompleted.reduce((sum,o)=>sum+Number(o.final_payout??o.payout??0),0);
   const dayRows=new Map();
   const dayRow=key=>{if(!dayRows.has(key))dayRows.set(key,{captured:0,csv:0,snapshot:null});return dayRows.get(key)};

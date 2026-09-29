@@ -59,10 +59,8 @@ struct RadarCaptureIntent:AppIntent {
 
 struct RadarAppShortcuts:AppShortcutsProvider {
     static var appShortcuts:[AppShortcut] {
-        [
             AppShortcut(intent:RadarCaptureIntent(),
                 phrases:["Analyze an Uber screenshot with \(.applicationName)"],
                 shortTitle:"Analyze Uber Screen",systemImageName:"text.viewfinder")
-        ]
     }
 }

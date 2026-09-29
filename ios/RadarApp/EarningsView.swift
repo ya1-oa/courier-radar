@@ -26,7 +26,7 @@ struct EarningsView:View {
         }
     }
     var body:some View {
-        ScrollView {
+        ScrollView(.vertical,showsIndicators:true) {
             VStack(alignment:.leading,spacing:14) {
                 VStack(alignment:.leading,spacing:5){
                     RadarKicker(text:"Delivery performance")

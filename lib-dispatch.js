@@ -91,8 +91,24 @@ export function buildDispatchModel({offers=[],events=[],presence=[],shifts=[],no
   if(!g||!all)continue;const w=decay(ms(o.captured_at),t);g.offers+=w;all.offers+=w;
   for(const z of [g,all]){z.reward+=w*val(o.payout);z.rewardWeight+=w;z.duration+=w*val(o.eta_minutes);z.durationWeight+=w}
  }
+ // Global offer flow uses rider-started shifts even when iOS suspends background GPS.
+ // It never assigns missing-location minutes to a specific wait zone.
+ const shiftSample=unique.filter(o=>inShift(ms(o.captured_at))&&!busyAt(ms(o.captured_at)));
+ let onlineAvailable=0;
+ for(const s of usableShifts){
+  const telemetry=[...validPings.map(p=>ms(p.captured_at)),...unique.map(o=>ms(o.captured_at))].filter(x=>x>=s.a&&x<=s.b);
+  const latest=telemetry.length?Math.max(...telemetry):s.a;
+  const end=Math.min(s.b,latest+10*MIN),bound=Math.min(end,s.a+18*3600000);
+  if(bound<=s.a)continue;
+  let active=0;
+  const overlaps=busy.filter(w=>w.a<bound&&w.b>s.a).map(w=>({a:Math.max(s.a,w.a),b:Math.min(bound,w.b)})).sort((a,b)=>a.a-b.a);
+  let cursor=s.a;for(const w of overlaps){if(w.a>cursor)active+=w.a-cursor;cursor=Math.max(cursor,w.b)}if(bound>cursor)active+=bound-cursor;
+  onlineAvailable+=active/MIN*decay((s.a+bound)/2,t);
+ }
+ const globalOffers=shiftSample.reduce((s,o)=>s+decay(ms(o.captured_at),t),0);
  const rates=[...global.values()].filter(g=>g.minutes>=15).map(g=>g.offers/g.minutes).filter(Number.isFinite);
- const globalRate=rates.length?clamp(rates.reduce((a,b)=>a+b,0)/rates.length,.005,.33):1/16;
+ const gpsRate=rates.length?clamp(rates.reduce((a,b)=>a+b,0)/rates.length,.005,.33):1/16;
+ const globalRate=onlineAvailable>=30?clamp((globalOffers+gpsRate*40)/(onlineAvailable+40),.004,.33):gpsRate;
  const observedPayout=weighted(observed,o=>o.payout,t)??weighted(unique,o=>o.payout,t)??7.5;
  const observedDuration=weighted(observed,o=>o.eta_minutes,t)??weighted(unique,o=>o.eta_minutes,t)??24;
  const zones=[...byKey.values()].map(g=>{
@@ -112,7 +128,7 @@ export function buildDispatchModel({offers=[],events=[],presence=[],shifts=[],no
  const mean=a=>a.length?a.reduce((sum,x)=>sum+x,0)/a.length:0;
  const penaltyEvidence=Math.min(1,postGaps.length/20);
  const declineExtraMinutes=postGaps.length>=10&&baselineGaps.length>=20?clamp((mean(postGaps)-mean(baselineGaps))*penaltyEvidence,0,8):0;
- return {version:4,trainedAt:new Date(t).toISOString(),windowDays:30,vehicle,offersCaptured:unique.length,offersObservedAvailable:observed.length,verifiedAvailableMinutes:+[...byKey.values()].reduce((s,x)=>s+x.minutes,0).toFixed(1),gpsSamples:validPings.length,completedWindows:busy.length,pooled:{rate:globalRate,payout:observedPayout,duration:observedDuration},zones,decline:{sampleSize:postGaps.length,baselineSize:baselineGaps.length,observedExcessMinutes:+declineExtraMinutes.toFixed(1),isCausal:false},limitations:['Only foreground/recent GPS pings count as availability','No access to Uber queue or other couriers','Offers captured incompletely bias learned arrival rates','Decline associations are observational']};
+ return {version:4,trainedAt:new Date(t).toISOString(),windowDays:30,vehicle,offersCaptured:unique.length,offersObservedAvailable:observed.length,verifiedAvailableMinutes:+[...byKey.values()].reduce((s,x)=>s+x.minutes,0).toFixed(1),shiftAvailableMinutes:+onlineAvailable.toFixed(1),globalObservedOffers:+globalOffers.toFixed(1),gpsSamples:validPings.length,completedWindows:busy.length,pooled:{rate:globalRate,payout:observedPayout,duration:observedDuration},zones,decline:{sampleSize:postGaps.length,baselineSize:baselineGaps.length,observedExcessMinutes:+declineExtraMinutes.toFixed(1),isCausal:false},limitations:['Only foreground/recent GPS pings count as availability','No access to Uber queue or other couriers','Offers captured incompletely bias learned arrival rates','Decline associations are observational']};
 }
 export function zoneEstimate(model,zone,block){
  const z=(model?.zones||[]).find(x=>x.zone===zone&&x.block===block),prior=model?.pooled||{rate:1/16,payout:7.5,duration:24};

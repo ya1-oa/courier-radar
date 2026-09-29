@@ -106,7 +106,7 @@ export function buildDispatchModel({offers=[],events=[],presence=[],shifts=[],no
  });
  for(const o of observed){
   const zone=zoneFrom(o),block=dispatchBlock(o.captured_at),key=zone+'|'+block,g=byKey.get(key),all=global.get(block);
-  if(!g||!all)continue;const matched=exposures.find(x=>ms(o.captured_at)>=x.a-15000&&ms(o.captured_at)<=x.b+15000&&!x.inferred),factor=matched?1:.45,w=decay(ms(o.captured_at),t)*factor;g.offers+=w;all.offers+=w;
+  if(!g||!all)continue;const matched=exposures.find(x=>x.zone===zone&&ms(o.captured_at)>=x.a-15000&&ms(o.captured_at)<=x.b+15000&&!x.inferred),factor=matched?1:.45,w=decay(ms(o.captured_at),t)*factor;g.offers+=w;all.offers+=w;
   for(const z of [g,all]){z.reward+=w*val(o.payout);z.rewardWeight+=w;z.duration+=w*val(o.eta_minutes);z.durationWeight+=w}
  }
  // Global offer flow uses rider-started shifts even when iOS suspends background GPS.

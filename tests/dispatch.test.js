@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {buildDispatchModel,dispatchZone,dispatchBlock,decideDispatchOffer,decideDispatchWait} from '../lib-dispatch.js';
+import {buildDispatchModel,dispatchZone,dispatchBlock,decideDispatchOffer,decideDispatchWait,remainingBatteryMiles} from '../lib-dispatch.js';
 const now=Date.parse('2026-09-29T20:00:00Z'),iso=n=>new Date(n).toISOString(),westwood={lat:34.0627,lng:-118.4455},village={lat:34.027,lng:-118.444};
 const st={started_at:iso(now-120*60000),ended_at:iso(now)};
 function pings(count=60){return Array.from({length:count},(_,i)=>({captured_at:iso(now-(count-i)*120000),event:'heartbeat',vehicle:'ebike',...westwood}))}
@@ -60,4 +60,23 @@ test('RETURN requires real comparative exposure, not restaurant density',()=>{
 });
 test('low e-bike range requires charge, not merchant hopping',()=>{
  assert.equal(decideDispatchWait({model:base(),position:westwood,now,batteryMiles:3.5}).advice,'CHARGE');
+});
+
+test('bracketed same-zone GPS gaps are inferred, not mislabeled verified',()=>{
+ const ps=[{captured_at:iso(now-70*60000),...westwood,vehicle:'ebike'},{captured_at:iso(now-45*60000),...westwood,vehicle:'ebike'}];
+ const m=buildDispatchModel({presence:ps,shifts:[st],now});
+ assert.ok(m.inferredZoneMinutes>3,m.inferredZoneMinutes);
+ assert.ok(m.verifiedAvailableMinutes<6,m.verifiedAvailableMinutes);
+});
+test('travel that crosses neighborhoods is not fabricated as stationary wait',()=>{
+ const ps=[{captured_at:iso(now-70*60000),...westwood,vehicle:'ebike'},{captured_at:iso(now-45*60000),...village,vehicle:'ebike'}];
+ const m=buildDispatchModel({presence:ps,shifts:[st],now});
+ assert.equal(m.inferredZoneMinutes,0);
+});
+test('accepted-trip range is deducted once and is anchored to latest rider update',()=>{
+ const p={batteryMiles:20,batteryRecordedAt:iso(now-60*60000)};
+ const a={id:'a',captured_at:iso(now-30*60000),payout:10,miles:3,eta_minutes:20,merchant:'One',state:'delivered'};
+ const copy={...a,id:'b',captured_at:iso(now-29*60000)};
+ assert.equal(remainingBatteryMiles(p,[a,copy]),16.4);
+ assert.equal(remainingBatteryMiles({...p,batteryRecordedAt:iso(now-20*60000)},[a]),20);
 });

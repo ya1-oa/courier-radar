@@ -4,7 +4,6 @@ import RadarCore
 struct HistoryView:View {
     @EnvironmentObject private var store:RadarStore
     @State private var range=0
-    @State private var showingRecovery=false
     private var filtered:[RadarOffer] {
         let date=Date(),cut=Date().addingTimeInterval(-7*86400)
         let today=WorkClock.workday(at:date)
@@ -22,16 +21,7 @@ struct HistoryView:View {
             VStack(alignment:.leading,spacing:15) {
                 VStack(alignment:.leading,spacing:6){
                     RadarKicker(text:"Your recorded Uber offers")
-                    HStack{
-                        Text("Order history").font(.system(size:31,weight:.bold))
-                        Spacer()
-                        Button{showingRecovery=true}label:{
-                            Label("RECOVER",systemImage:"plus")
-                                .font(.system(size:10,weight:.bold))
-                                .padding(9)
-                                .background(RadarStyle.surface,in:RoundedRectangle(cornerRadius:9))
-                        }.buttonStyle(.plain)
-                    }
+                    Text("Order history").font(.system(size:31,weight:.bold))
                     Text("Captured lifecycle, actual times and recorded amounts.")
                         .font(.system(size:12)).foregroundStyle(RadarStyle.subtle)
                 }
@@ -68,7 +58,6 @@ struct HistoryView:View {
         .scrollContentBackground(.hidden)
         .background(RadarStyle.background)
         .refreshable {await store.refresh()}
-        .sheet(isPresented:$showingRecovery){MissedOrderView()}
     }
     @ViewBuilder private func historyGroup(title:String,detail:String,offers:[RadarOffer]) -> some View {
         if !offers.isEmpty {

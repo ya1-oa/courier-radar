@@ -30,7 +30,7 @@
     <div id="lastOrderType" class="sr-only">Waiting for capture</div><div id="zonePicker" class="zone-picker hidden"></div><section id="pocketWhy" class="pocket-why hidden"><div class="eyebrow">WHY THIS POCKET?</div><strong id="pocketWhyTitle">—</strong><div id="pocketWhyEvidence"></div></section>
     <details class="fallback-actions"><summary>Order controls</summary><div class="actions"><button id="acceptBtn" class="primary">Accepted</button><button id="rejectBtn" class="ghost">Rejected</button><button id="cancelOrderBtn" class="cancel-order-btn" type="button">Cancel order</button></div></details>
    </div></details>
-   <button id="recoverFromMap" class="recover-open-map" type="button">+ MISSED</button><button id="quickNext" class="quick-next hidden" type="button" aria-label="Record next order stage">NEXT STAGE</button><button id="shiftBtn" class="floating-shift"><span class="shift-pulse" aria-hidden="true"></span><span class="shift-action-icon" aria-hidden="true"></span><span class="shift-label">START SHIFT</span></button>
+   <button id="quickNext" class="quick-next hidden" type="button" aria-label="Record next order stage">NEXT STAGE</button><button id="shiftBtn" class="floating-shift"><span class="shift-pulse" aria-hidden="true"></span><span class="shift-action-icon" aria-hidden="true"></span><span class="shift-label">START SHIFT</span></button>
   </div>
   <div class="sr-only">
    <span id="dailyGoal">$175</span><i id="dailyGoalBar"></i><span id="dailyRemaining">— left</span><span id="liveBlockName">CURRENT BLOCK</span><i id="blockEarned">$0</i><strong id="blockGoal">$0</strong><i id="blockGoalBar"></i><span id="blockPace">Goal pace</span>
@@ -68,24 +68,11 @@
 
 </div>
 <div class="view" data-view="history">
-<section class="history-hero"><div><span class="eyebrow">TODAY</span><h2>Order history</h2><button id="recoverFromHistory" class="ghost recover-open" type="button">+ Recover missed order</button></div><div class="history-total"><strong id="historyTodayTotal">$0</strong><span id="historyTotalLabel">captured delivery earnings</span></div></section>
+<section class="history-hero"><div><span class="eyebrow">TODAY</span><h2>Order history</h2></div><div class="history-total"><strong id="historyTodayTotal">$0</strong><span id="historyTotalLabel">captured delivery earnings</span></div></section>
 <section class="history-section history-primary"><div class="section-title"><b>Completed</b><span>pickup → dropoff</span></div><div id="completedHistory" class="history-list"><p class="hint">No completed deliveries yet today.</p></div></section>
 <section class="history-section secondary-history"><div class="section-title"><b>Offers</b><span>latest first</span></div><div id="captureHistory" class="history-list"><p class="hint">No captures yet.</p></div></section>
 <section class="card setup"><details><summary>Diagnostics</summary><label>Capture token</label><input id="token" type="password" placeholder="Vercel CAPTURE_TOKEN"><button id="saveToken" class="ghost full">Save token</button><textarea id="testText" rows="5" placeholder="$11.42&#10;Sweetgreen&#10;2.7 mi&#10;24 min"></textarea><button id="testBtn" class="ghost full">Test capture</button></details></section>
 </div>
-<dialog id="recoverDialog" class="recover-dialog" aria-labelledby="recoverDialogTitle">
- <form id="recoverForm">
- <div class="recover-head"><div><span class="eyebrow">ORDER HISTORY</span><h2 id="recoverDialogTitle">Recover missed order</h2></div><button id="closeRecover" class="ghost" type="button" aria-label="Close recovery">✕</button></div>
- <p class="hint">Forgot to capture a delivery? Add its actual details. Resume an active order or record a finished delivery without inventing Uber offer observations.</p>
- <label>Restaurant / merchant<input name="merchant" maxlength="160" placeholder="e.g. Mendocino Farms" required autocomplete="off"></label>
- <div class="recover-cols"><label>Payout ($)<input name="payout" type="number" min=".01" max="2000" step=".01" inputmode="decimal" placeholder="11.75" required></label><label>Current stage<select name="state" id="recoverStage"><option value="delivered">Delivered</option><option value="picked_up">Picked up</option><option value="arrived">At pickup</option><option value="accepted">Accepted</option></select></label></div>
- <div class="recover-cols"><label>Order started<input name="acceptedAt" id="recoverStart" type="datetime-local" required></label><label id="recoverFinishGroup">Completed at<input name="finishedAt" id="recoverEnd" type="datetime-local" required></label></div>
- <div class="recover-cols"><label>Miles <small>(optional)</small><input name="miles" type="number" min="0" max="250" step=".1" inputmode="decimal" placeholder="3.1"></label><label>Trip minutes <small>(optional)</small><input name="etaMinutes" type="number" min="1" max="360" inputmode="numeric" placeholder="25"></label></div>
- <label class="recover-confirm"><input id="recoverConfirm" type="checkbox" required> Times are actual or my closest estimates.</label>
- <p class="hint">Manually recovered entries count toward your recorded delivery history, not the Uber-offer arrival model. If you've synced Uber's daily total, we won't add this payout again.</p>
- <p class="hint" id="recoverStatus" aria-live="polite"></p>
- <button class="primary full" id="recoverSave" type="submit">Save and resume</button>
- </form></dialog>
 </main>
 <nav class="bottom-nav four" aria-label="Primary"><button class="nav-btn active" data-tab="live"><span class="nav-art nav-home" aria-hidden="true"></span>Home</button><button class="nav-btn" data-tab="history"><span class="nav-art nav-history" aria-hidden="true"></span>History</button><button class="nav-btn" data-tab="money"><span class="nav-art nav-stats" aria-hidden="true"></span>Stats</button><button class="nav-btn" data-tab="plan"><span class="nav-art nav-settings" aria-hidden="true"></span>Settings</button></nav>
 <script type="module" src="/app.js"></script></body></html>

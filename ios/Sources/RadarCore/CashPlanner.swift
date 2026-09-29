@@ -31,7 +31,7 @@ public struct CashPlanner {
         }
         guard z.availableMinutes>=60,z.offers>=5,z.confidence>=0.30,
               let zone else {
-            return CashDecision(kind:.take,reason:"Not enough local available-time observations to justify rejecting guaranteed cash.",zone:zone,modelConfidence:z.confidence)
+            return CashDecision(kind:.take,reason:"Not enough local available-time observations to justify rejecting guaranteed cash.",modelConfidence:z.confidence,zone:zone)
         }
 
         // Destination is learned from actual drop-off GPS. No restaurant count enters this function.

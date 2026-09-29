@@ -48,7 +48,7 @@ export default async function handler(req,res){
   const takenFingerprints=new Set(signalOffers.filter(o=>['accepted','arrived','picked_up','delivered','completed'].includes(o.state)).map(fingerprint));
   const skipDecisions=[];let radarAdvantage=0,radarWins=0,radarLosses=0,excludedSkips=0;
   for(let i=0;i<signalOffers.length;i++){
-    const o=signalOffers[i];if(!['rejected','passed'].includes(o.state)||!(Number(o.payout)>0))continue;
+    const o=signalOffers[i];if(o.state!=='rejected'||!(Number(o.payout)>0)||!(byOffer.get(o.id)||[]).some(e=>e.event==='rejected'))continue;
     const decisionAt=new Date(terminalTime(o)).getTime(),capturedAt=new Date(o.captured_at).getTime(),fp=fingerprint(o),wasEverAccepted=(byOffer.get(o.id)||[]).some(e=>['accepted','arrived','picked_up','delivered','completed'].includes(e.event)),staleCorrection=decisionAt-capturedAt>10*60000;
     if(wasEverAccepted||staleCorrection){excludedSkips++;continue}
     const duplicateTaken=takenFingerprints.has(fp);

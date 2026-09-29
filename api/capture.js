@@ -1,4 +1,5 @@
-import { parseOfferText, effectiveOfferRate, decisionForOffer } from '../lib-parser.js';
+import { parseOfferText, effectiveOfferRate } from '../lib-parser.js';
+import { buildDispatchModel, decideDispatchOffer } from '../lib-dispatch.js';
 import { cors, requireToken, dbConfigured, insert, select, patch, bodyOf, zoneFor, zoneHintFromText } from './_shared.js';
 import { marketCellFor, normalizeVehicle, timeBlockForDate, DEFAULT_TIMEZONE } from '../lib-network.js';
 export default async function handler(req,res){
@@ -46,6 +47,15 @@ export default async function handler(req,res){
       if(saved?.[0]?.id)await insert('offer_events',{offer_id:saved[0].id,driver_id:driverId,event:'observed',captured_at:row.captured_at,lat:row.lat,lng:row.lng,zone:row.zone,market_cell:row.market_cell});
     }catch(error){return res.status(500).json({error:error.message,parsed,rate})}
   }
-  const target=Number(settings.target_dph||35),uberRate=parsed.payout>0&&Number(parsed.etaMinutes)>0?{effectiveMinutes:Number(parsed.etaMinutes),dollarsPerHour:Number((parsed.payout/parsed.etaMinutes*60).toFixed(2))}:null,radarRate=parsed.payout>0&&Number.isFinite(radarEtaMinutes)?{effectiveMinutes:Number(radarEtaMinutes.toFixed(1)),dollarsPerHour:Number((parsed.payout/radarEtaMinutes*60).toFixed(2))}:rate,decisionRate=uberRate?.dollarsPerHour??radarRate?.dollarsPerHour,decision=decisionForOffer({dollarsPerHour:decisionRate,target,mode}),verdict=decision.verdict;
+  const target=Number(settings.target_dph||35),uberRate=parsed.payout>0&&Number(parsed.etaMinutes)>0?{effectiveMinutes:Number(parsed.etaMinutes),dollarsPerHour:Number((parsed.payout/parsed.etaMinutes*60).toFixed(2))}:null,radarRate=parsed.payout>0&&Number.isFinite(radarEtaMinutes)?{effectiveMinutes:Number(radarEtaMinutes.toFixed(1)),dollarsPerHour:Number((parsed.payout/radarEtaMinutes*60).toFixed(2))}:rate,decisionRate=uberRate?.dollarsPerHour??radarRate?.dollarsPerHour,dispatchRows=dbConfigured()?await Promise.all([
+   select('offers?driver_id=eq.'+driverId+'&order=captured_at.desc&limit=1500&select=*'),
+   select('offer_events?driver_id=eq.'+driverId+'&order=captured_at.desc&limit=4000&select=*'),
+   select('presence?driver_id=eq.'+driverId+'&order=captured_at.desc&limit=8000&select=*'),
+   select('shifts?driver_id=eq.'+driverId+'&order=started_at.desc&limit=100&select=*')
+  ]).catch(()=>null):null,
+  learned=dispatchRows?buildDispatchModel({offers:(dispatchRows[0]||[]).filter(x=>x.id!==saved?.[0]?.id),events:dispatchRows[1]||[],presence:dispatchRows[2]||[],shifts:dispatchRows[3]||[],vehicle,now:Date.now()}):null,
+  laDate=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Los_Angeles',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()),
+  decision=decideDispatchOffer({model:learned,offer:row,position:Number.isFinite(lat)&&Number.isFinite(lng)?{lat,lng}:null,now:Date.now(),remainingMinutes:Math.max(20,Math.min(180,Number(body.remainingMinutes)||120)),batteryMiles:body.batteryMiles??null,dailyEarned:Number(body.dailyEarned||0),dailyTarget:200,calibration:laDate==='2026-09-29'}),
+  verdict=decision.verdict;
   return res.status(200).json({ok:true,persisted:Boolean(saved),locationReceived:Boolean(Number.isFinite(lat)&&Number.isFinite(lng)),receivedLocation:{lat:Number.isFinite(lat)?lat:null,lng:Number.isFinite(lng)?lng:null},offerKind:parsed.offerKind,stackCount:parsed.stackCount,id:saved?.[0]?.id||null,parsed,rate:uberRate||radarRate,uberRate,radarRate,uberEtaMinutes:parsed.etaMinutes,radarEtaMinutes:Number.isFinite(radarEtaMinutes)?Number(radarEtaMinutes.toFixed(1)):null,speedMph,speedLevel,decision,verdict,zone,vehicle,timeBlock,marketCell,mode,destination:{text:dropoffText,lat:Number.isFinite(dropoffLat)?dropoffLat:null,lng:Number.isFinite(dropoffLng)?dropoffLng:null,zone:dropoffZone,marketCell:dropoffMarketCell,source:destinationSource,confidence:destinationConfidence}});
 }

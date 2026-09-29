@@ -25,7 +25,7 @@ No paid Apple membership is required for personal test installation. Background 
 
 ## First launch
 
-- Settings: enter the Radar server URL and existing Vercel CAPTURE_TOKEN. The default hostname is https://delivery-intelligence.vercel.app.
+- Settings: enter the Radar server URL and existing Vercel CAPTURE_TOKEN. The default hostname is https://delivery-intelligence-ten.vercel.app.
 - The token is stored in iOS Keychain, never in UserDefaults.
 - Home: start shift only while Uber is online. Permit location so your personal GPS wait-zone data accumulates.
 - Use Home → SCREENSHOT to select an Uber screenshot, or create the Back Tap Shortcut below.

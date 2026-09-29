@@ -24,7 +24,7 @@ import RadarCore
     init(){
         let saved=UserDefaults.standard.data(forKey:"RadarNativePreferencesV1")
             .flatMap{try? JSONDecoder().decode(Saved.self,from:$0)}
-        server=saved?.server ?? "https://delivery-intelligence.vercel.app"
+        server=saved?.server ?? "https://delivery-intelligence-ten.vercel.app"
         goal=saved?.goal ?? 200
         calibrationDay=saved?.calibrationDay ?? "2026-09-29"
         stopTime=saved?.stopTime ?? "01:00"

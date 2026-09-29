@@ -1,5 +1,5 @@
 import { parseOfferText, effectiveOfferRate } from '../lib-parser.js';
-import { buildDispatchModel, decideDispatchOffer } from '../lib-dispatch.js';
+import { buildDispatchModel, decideDispatchOffer, remainingBatteryMiles } from '../lib-dispatch.js';
 import { cors, requireToken, dbConfigured, insert, select, patch, bodyOf, zoneFor, zoneHintFromText } from './_shared.js';
 import { marketCellFor, normalizeVehicle, timeBlockForDate, DEFAULT_TIMEZONE } from '../lib-network.js';
 export default async function handler(req,res){
@@ -55,7 +55,14 @@ export default async function handler(req,res){
   ]).catch(()=>null):null,
   learned=dispatchRows?buildDispatchModel({offers:(dispatchRows[0]||[]).filter(x=>x.id!==saved?.[0]?.id),events:dispatchRows[1]||[],presence:dispatchRows[2]||[],shifts:dispatchRows[3]||[],vehicle,now:Date.now()}):null,
   laDate=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Los_Angeles',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()),
-  decision=decideDispatchOffer({model:learned,offer:row,position:Number.isFinite(lat)&&Number.isFinite(lng)?{lat,lng}:null,now:Date.now(),remainingMinutes:Math.max(20,Math.min(180,Number(body.remainingMinutes)||120)),batteryMiles:body.batteryMiles??null,dailyEarned:Number(body.dailyEarned||0),dailyTarget:200,calibration:laDate==='2026-09-29'}),
+  policy=settings.dispatch_policy||{},
+  clock=new Intl.DateTimeFormat('en-US',{timeZone:'America/Los_Angeles',hourCycle:'h23',hour:'2-digit',minute:'2-digit'}).formatToParts(new Date()),
+  nowMinutes=Number(clock.find(x=>x.type==='hour')?.value||0)*60+Number(clock.find(x=>x.type==='minute')?.value||0),
+  stopParts=String(body.stopTime||policy.stopTime||'01:00').split(':').map(Number),
+  stopMinutes=(stopParts[0]||0)*60+(stopParts[1]||0),
+  workHorizon=Math.max(10,(stopMinutes>nowMinutes?stopMinutes:stopMinutes+1440)-nowMinutes),
+  effectiveBattery=body.batteryMiles??remainingBatteryMiles(policy,dispatchRows?.[0]||[]),
+  decision=decideDispatchOffer({model:learned,offer:row,position:Number.isFinite(lat)&&Number.isFinite(lng)?{lat,lng}:null,now:Date.now(),remainingMinutes:Math.max(10,Math.min(180,Number(body.remainingMinutes)||workHorizon)),batteryMiles:effectiveBattery,dailyEarned:body.dailyEarned??null,dailyTarget:200,calibration:laDate===String(body.calibrationDay||policy.calibrationDay||'2026-09-29')}),
   verdict=decision.verdict;
   return res.status(200).json({ok:true,persisted:Boolean(saved),locationReceived:Boolean(Number.isFinite(lat)&&Number.isFinite(lng)),receivedLocation:{lat:Number.isFinite(lat)?lat:null,lng:Number.isFinite(lng)?lng:null},offerKind:parsed.offerKind,stackCount:parsed.stackCount,id:saved?.[0]?.id||null,parsed,rate:uberRate||radarRate,uberRate,radarRate,uberEtaMinutes:parsed.etaMinutes,radarEtaMinutes:Number.isFinite(radarEtaMinutes)?Number(radarEtaMinutes.toFixed(1)):null,speedMph,speedLevel,decision,verdict,zone,vehicle,timeBlock,marketCell,mode,destination:{text:dropoffText,lat:Number.isFinite(dropoffLat)?dropoffLat:null,lng:Number.isFinite(dropoffLng)?dropoffLng:null,zone:dropoffZone,marketCell:dropoffMarketCell,source:destinationSource,confidence:destinationConfidence}});
 }

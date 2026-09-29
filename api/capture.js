@@ -74,7 +74,7 @@ export default async function handler(req,res){
    select('shifts?driver_id=eq.'+driverId+'&order=started_at.desc&limit=100&select=*')
   ]).catch(()=>null):null,
   learned=dispatchRows?buildDispatchModel({offers:(dispatchRows[0]||[]).filter(x=>x.id!==saved?.[0]?.id),events:dispatchRows[1]||[],presence:dispatchRows[2]||[],shifts:dispatchRows[3]||[],vehicle,now:Date.now()}):null,
-  laDate=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Los_Angeles',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()),
+  laDate=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Los_Angeles',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(Date.now()-4*3600000)),
   policy=settings.dispatch_policy||{},
   clock=new Intl.DateTimeFormat('en-US',{timeZone:'America/Los_Angeles',hourCycle:'h23',hour:'2-digit',minute:'2-digit'}).formatToParts(new Date()),
   nowMinutes=Number(clock.find(x=>x.type==='hour')?.value||0)*60+Number(clock.find(x=>x.type==='minute')?.value||0),

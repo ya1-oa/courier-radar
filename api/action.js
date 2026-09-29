@@ -12,10 +12,16 @@ export default async function handler(req,res){
   if(!dbConfigured())return res.status(503).json({error:'Supabase is not configured'});
   const body=await bodyOf(req);
   try{
-    const recent=await select(`offers?driver_id=eq.${driverId}&state=in.(accepted,arrived,picked_up,observed)&order=captured_at.desc&limit=10&select=id,captured_at,state,vehicle,batch_id,offer_kind,stack_count,payout,final_payout`);
-    if(!recent?.length)return res.status(404).json({error:'No recent offer'});
-    const fresh=recent.filter(o=>Date.now()-new Date(o.captured_at).getTime()<4*3600000),offer=fresh[0],requested=String(body.state||body.event||'next').toLowerCase();
-    if(!offer)return res.status(409).json({error:'Latest Radar order is stale. Capture a new Uber offer before advancing.'});
+    const requested=String(body.state||body.event||'next').toLowerCase();
+    const specifiedId=String(body.offerId||'').trim();
+    if(specifiedId&&!/^[0-9a-f-]{36}$/i.test(specifiedId))return res.status(400).json({error:'Invalid offer ID'});
+    const recent=specifiedId?
+      await select('offers?driver_id=eq.'+driverId+'&id=eq.'+specifiedId+'&state=in.(accepted,arrived,picked_up,observed)&limit=1&select=id,captured_at,state,source,vehicle,batch_id,offer_kind,stack_count,payout,final_payout'):
+      await select('offers?driver_id=eq.'+driverId+'&state=in.(accepted,arrived,picked_up,observed)&order=captured_at.desc&limit=10&select=id,captured_at,state,source,vehicle,batch_id,offer_kind,stack_count,payout,final_payout');
+    if(!recent?.length)return res.status(404).json({error:'No open Radar order found'});
+    const maxAge=recent[0].source==='manual_recovery'?14*86400000:4*3600000;
+    const offer=recent.find(o=>Date.now()-new Date(o.captured_at).getTime()<maxAge);
+    if(!offer)return res.status(409).json({error:'Order is too old to advance automatically. Use missed-order recovery.'});
     let state=requested==='next'?(NEXT[offer.state]||null):(VALID.has(requested)?requested:null);
     // A stacked Uber offer stays PICKED_UP while intermediate drop-offs are recorded.
     // Each Radar Next at a drop-off stores its own GPS/zone; only the final stop closes the batch.

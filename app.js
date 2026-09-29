@@ -25,31 +25,21 @@ function destinationEvidence(o){const exact=Number.isFinite(Number(o?.dropoff_la
 function offerEconomics(o){const gross=effectiveDph(o),miles=Number(o?.miles)||0,payout=Number(o?.payout)||0,dest=destinationEvidence(o),badHeat=['DEAD','COOL'].includes(String(dest.heat||'').toUpperCase()),goodHeat=['HOT','WARM'].includes(String(dest.heat||'').toUpperCase()),dense=dest.restaurants>=12,thin=dest.exact&&dest.restaurants>0&&dest.restaurants<5,unknownPenalty=!dest.cell&&dest.text?Math.min(6,miles*.8):!dest.text&&!dest.cell?Math.min(8,miles):0,returnPenalty=badHeat?Math.min(14,miles/Math.max(8,Number(riderSettings.speed_high_mph)||20)*60):goodHeat||dense?-Math.min(4,Math.max(1,miles*.5)):thin?Math.min(7,Math.max(2,miles*.75)):unknownPenalty,cycle=(payout>0&&gross)?Math.max(1,payout/(gross/60)+returnPenalty):null,net=cycle?payout/cycle*60:gross;return{gross,net,returnPenalty,dropHeat:dest.heat,destination:dest}}
 function replacementEconomics(){const now=new Date(),block=blockFor(now),base=signalOffers().filter(o=>Number(o.payout)>0&&Number(o.eta_minutes)>0),cell=signalOffers()[0]?.market_cell||signalOffers()[0]?.dropoff_market_cell||null,near=o=>position&&Number.isFinite(Number(o.lat))&&Number.isFinite(Number(o.lng))?geoMiles(position.lat,position.lng,Number(o.lat),Number(o.lng))<=1.25:false,sameBlock=o=>String(o.time_block||'').toUpperCase()===block,sameCell=o=>cell&&(o.market_cell===cell||o.dropoff_market_cell===cell);let sample=base.filter(o=>minsSince(o.captured_at)<=14*24*60&&(sameCell(o)||near(o))&&sameBlock(o));let scope='LOCAL + TIME';if(sample.length<4){sample=base.filter(o=>minsSince(o.captured_at)<=7*24*60&&(sameCell(o)||near(o)));scope='LOCAL'}if(sample.length<4){sample=recent(180).filter(o=>Number(o.payout)>0&&Number(o.eta_minutes)>0);scope='RECENT'}sample=sample.sort((a,b)=>new Date(b.captured_at)-new Date(a.captured_at)).slice(0,40);const gaps=sample.slice(0,-1).map((o,i)=>Math.abs(new Date(o.captured_at)-new Date(sample[i+1].captured_at))/60000).filter(x=>x>.15&&x<45),planWait=Number(zoneChoice()?.expectedWaitMinutes||startPlan?.expectedWaitMinutes||startPlan?.recommendedLocal?.expectedWaitMinutes),wait=median(gaps)??(Number.isFinite(planWait)&&planWait>0?planWait:8),payout=median(sample.map(o=>Number(o.payout)))??7.5,eta=median(sample.map(o=>Number(o.eta_minutes)))??18,waitDph=payout/Math.max(1,wait+eta)*60,confidence=Math.min(1,sample.length/12);return{wait,payout,eta,waitDph,n:sample.length,scope,confidence,cell,block}}
 function decisionForOffer(o){
- const econ=offerEconomics(o),replacement=replacementEconomics(),idleNow=idleState().minutes??0;
- const payout=Number(o?.payout)||0,miles=Number(o?.miles)||0,eta=Number(o?.eta_minutes)||Number(o?.radar_eta_minutes)||0;
- const dayEarned=Number(statsData?.todayEarnings??statsData?.shiftEarnings??0),dayGoal=Number(goals().daily||200),remaining=Math.max(0,dayGoal-dayEarned);
- const completed=(statsData?.todayCompleted||[]),onlineMin=Math.max(0,Number(statsData?.todayOnlineMinutes??statsData?.onlineMinutes??0));
- const activeMin=completed.reduce((sum,x)=>{const a=new Date(x.accepted_at||x.captured_at||0),b=new Date(x.delivered_at||0);const m=(b-a)/60000;return sum+(Number.isFinite(m)&&m>0&&m<240?m:0)},0);
- const utilization=onlineMin>0?Math.min(1,activeMin/onlineMin):0;
- const observedWait=Math.max(1,Number(replacement.wait)||8),nextPayout=Math.max(0,Number(replacement.payout)||0);
- // Cash-first opportunity cost: skipping is only rational when a materially better offer is likely
- // to arrive before this job would finish. Sparse/slow markets sharply reduce the value of waiting.
- const arrivalProb=Math.min(.95,eta>0?1-Math.exp(-eta/observedWait):0);
- const replacementCash=nextPayout*arrivalProb;
- const idlePenalty=Math.min(.65,idleNow/30*.65);
- const lowUtilPenalty=Math.max(0,.60-utilization)*1.25;
- const skipValue=replacementCash*Math.max(.15,1-idlePenalty-lowUtilPenalty);
- const completionValue=payout;
- const feasible=payout>0&&eta>0&&miles>=0;
- const batteryTrap=miles>=15&&payout<15;
- const timeTrap=eta>=90&&payout<18;
- const dominated=feasible&&payout<4&&miles>=6;
+ const econ=offerEconomics(o),replacement=replacementEconomics(),idleNow=idleState().minutes??0,payout=Number(o?.payout)||0,miles=Number(o?.miles)||0,eta=Number(o?.eta_minutes)||Number(o?.radar_eta_minutes)||0;
+ const dayEarned=Number(statsData?.todayEarnings??statsData?.shiftEarnings??0),dayGoal=Number(goals().daily||200),remaining=Math.max(0,dayGoal-dayEarned),learn=statsData?.selfLearning||{};
+ const onlineMin=Math.max(0,Number(statsData?.todayOnlineMinutes??statsData?.onlineMinutes??0)),utilization=Number.isFinite(Number(learn.todayUtilization))?Number(learn.todayUtilization):0;
+ const observedWait=Math.max(1,Number(learn.expectedWaitMinutes??replacement.wait??8)),nextPayout=Math.max(0,Number(learn.expectedOfferPayout??replacement.payout??0));
+ const arrivalProb=Math.min(.98,eta>0?1-Math.exp(-eta/observedWait):0),replacementCash=nextPayout*arrivalProb;
+ const learnedSkipMultiplier=Math.max(.15,Math.min(1.5,Number(learn.skipValueMultiplier??1)));
+ const idlePenalty=Math.min(.75,idleNow/30*.75),utilTarget=Math.max(.45,Math.min(.85,Number(learn.targetUtilization??.65))),lowUtilPenalty=Math.max(0,utilTarget-utilization)*1.4;
+ const skipValue=replacementCash*learnedSkipMultiplier*Math.max(.10,1-idlePenalty-lowUtilPenalty);
+ const feasible=payout>0&&eta>0&&miles>=0,batteryTrap=miles>=Number(learn.maxLowPayMiles??15)&&payout<Number(learn.lowPayFloor??15),timeTrap=eta>=Number(learn.maxLowPayMinutes??90)&&payout<Number(learn.timeTrapPayFloor??18),dominated=feasible&&payout<Number(learn.absoluteMinPay??4)&&miles>=6;
  let verdict='TAKE',why='';
  if(!feasible){verdict='BORDERLINE';why='Offer data incomplete — verify the Uber card before accepting.'}
- else if(batteryTrap||timeTrap||dominated){verdict='SKIP';why=`Skip extreme trap: ${money(payout)} for ${eta||'?'}m / ${miles.toFixed(1)}mi can consume too much time or battery for the cash returned.`}
- else if(completionValue<skipValue&&utilization>.62&&idleNow<5){verdict='BORDERLINE';why=`Borderline: recent offer flow is unusually strong, so waiting briefly has about ${money(skipValue)} modeled cash value.`}
- else {verdict='TAKE';why=`TAKE · bank ${money(payout)}. ${money(Math.max(0,remaining-payout))} remains to ${money(dayGoal)} · utilization ${Math.round(utilization*100)}% · waiting is modeled at only ${money(skipValue)} cash value.`}
- return{...econ,...replacement,rate:econ.net||econ.gross||0,target:dayGoal,remaining,verdict,idleNow,cashFirst:true,cashReason:why,utilization,skipValue,replacementCash,arrivalProb};
+ else if(batteryTrap||timeTrap||dominated){verdict='SKIP';why=`Skip learned extreme trap: ${money(payout)} for ${eta||'?'}m / ${miles.toFixed(1)}mi.`}
+ else if(payout<skipValue&&utilization>utilTarget&&idleNow<Math.max(3,observedWait*.55)){verdict='BORDERLINE';why=`Borderline: learned replacement value is ${money(skipValue)} from your own recent outcomes.`}
+ else{verdict='TAKE';why=`TAKE · bank ${money(payout)}. ${money(Math.max(0,remaining-payout))} remains to ${money(dayGoal)} · learned utilization ${Math.round(utilization*100)}% · wait value ${money(skipValue)}.`}
+ return{...econ,...replacement,rate:econ.net||econ.gross||0,target:dayGoal,remaining,verdict,idleNow,cashFirst:true,cashReason:why,utilization,skipValue,replacementCash,arrivalProb,selfLearning:true,learningSamples:Number(learn.samples||0)};
 }
 function median(arr){const a=arr.filter(Number.isFinite).sort((x,y)=>x-y);if(!a.length)return null;const m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2}
 function allCells(){return [...(network.market?.length?network.market:network.personal||[])]}

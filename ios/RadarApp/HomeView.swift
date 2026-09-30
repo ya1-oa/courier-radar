@@ -14,6 +14,7 @@ struct HomeView:View {
     @State private var activeOfferExpanded=false
     @State private var confirmFinish=false
     @State private var waitExpanded=false
+    @State private var showVoltageSheet=false
 
     private var zones:[DispatchZone] {
         (store.stats?.dispatchModel?.zones ?? []).filter {
@@ -113,6 +114,15 @@ struct HomeView:View {
                             .overlay(RoundedRectangle(cornerRadius:14)
                                 .strokeBorder(RadarStyle.line))
                     }.buttonStyle(.plain)
+                    Button {showVoltageSheet=true} label:{
+                        VStack(spacing:2) {
+                            Image(systemName:"bolt.fill").font(.system(size:15,weight:.semibold))
+                            Text("VOLTS").font(.system(size:9,weight:.bold))
+                        }
+                        .frame(width:48,height:48)
+                        .background(RadarStyle.surface,in:RoundedRectangle(cornerRadius:14))
+                        .overlay(RoundedRectangle(cornerRadius:14).strokeBorder(RadarStyle.line))
+                    }.buttonStyle(.plain)
                 }
                 waitPanel
                 Spacer(minLength:5)
@@ -170,6 +180,12 @@ struct HomeView:View {
                 else{store.error="Could not open the selected screenshot."}
                 selectedScreenshot=nil
             }
+        }
+        .sheet(isPresented:$showVoltageSheet) {
+            RadarVoltageSheet()
+                .environmentObject(store)
+                .environmentObject(store.prefs)
+                .presentationDetents([.medium,.large])
         }
         .confirmationDialog("Mark delivered in Radar?",
             isPresented:$confirmFinish,titleVisibility:.visible){

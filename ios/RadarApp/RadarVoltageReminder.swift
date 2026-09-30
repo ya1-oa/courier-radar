@@ -1,10 +1,10 @@
 import Foundation
 import UserNotifications
 
-/// Five opt-in reminders 90 minutes apart, reset on each voltage reading.
+/// Twelve opt-in reminders 90 minutes apart, reset on each voltage reading.
 /// iOS schedules these even when Radar is not running in the foreground.
 enum RadarVoltageReminder {
-    private static let ids=(1...5).map { "radar-voltage-\($0)" }
+    private static let ids=(1...12).map { "radar-voltage-\($0)" }
     static func cancel() async {
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers:ids)
     }

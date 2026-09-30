@@ -42,6 +42,7 @@ struct RadarImageCaptureIntent:AppIntent {
                 "remainingMinutes":WorkClock.minutesUntilStop(now:Date(),clock:policy.stopTime)
             ]
             if let miles=policy.batteryMiles {payload["batteryMiles"]=miles}
+            if let gps=RadarRecentGPS.latest() {payload["lat"]=gps.lat;payload["lng"]=gps.lng}
             let result:CapturePayload=try await api.post("/api/capture",json:payload)
             let message:String
             if result.screen?.kind=="lifecycle" {

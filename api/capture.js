@@ -33,23 +33,11 @@ export default async function handler(req,res){
       const repeat=prior?.[0]&&Math.abs(Number(prior[0].payout)-Number(row.payout))<.02&&Math.abs(Number(prior[0].miles)-Number(row.miles))<.16&&Math.abs(Number(prior[0].eta_minutes)-Number(row.eta_minutes))<=2&&String(prior[0].merchant||'').toLowerCase()===String(row.merchant||'').toLowerCase()&&(Date.now()-new Date(prior[0].captured_at).getTime())<180000;
       if(repeat){saved=[prior[0]];duplicate=true;}
       else{
-      // A new standalone offer after pickup is evidence of the next trip. Close the
-      // previous single order before opening the next; an add-on/stack must stay
-      // attached to its existing batch instead.
-      const priorAgeMin=prior?.[0]?.captured_at?(Date.now()-new Date(prior[0].captured_at).getTime())/60000:0;
-      const incomingStack=Boolean(parsed.isAddOn||parsed.stackCount>1);
-      const completedPrevious=prior?.[0]?.state==='picked_up' && priorAgeMin>=5 &&
-        Number(prior[0].stack_count||1)===1 && !incomingStack;
-      if(completedPrevious){
-        const completedAt=new Date().toISOString();
-        await patch(`offers?id=eq.${prior[0].id}&driver_id=eq.${driverId}`,{state:'delivered',final_payout:prior[0].final_payout??prior[0].payout??null});
-        await insert('offer_events',{offer_id:prior[0].id,driver_id:driverId,event:'inferred_delivery',captured_at:completedAt,lat:Number.isFinite(lat)?lat:null,lng:Number.isFinite(lng)?lng:null,zone,market_cell:marketCell});
-        await insert('offer_events',{offer_id:prior[0].id,driver_id:driverId,event:'delivered',captured_at:completedAt,lat:Number.isFinite(lat)?lat:null,lng:Number.isFinite(lng)?lng:null,zone,market_cell:marketCell});
-        if(prior[0].batch_id)await patch(`batches?id=eq.${prior[0].batch_id}&driver_id=eq.${driverId}`,{state:'completed',completed_at:completedAt,final_payout:prior[0].final_payout??prior[0].payout??null}).catch(()=>null);
-        // The newly captured offer is presumed accepted only for this explicit
-        // handoff; all other offers still begin observed and require acceptance.
-        row.state='accepted';
-      }
+      // Offer captures are decisions only. Never close the delivery that is already
+      // in progress. If another offer arrives before the pending one is promoted,
+      // the older pending offer was not accepted and becomes passed.
+      const inProgress=await select(`offers?driver_id=eq.${driverId}&state=in.(accepted,arrived,picked_up)&order=captured_at.desc&limit=1&select=id,state,batch_id,captured_at`).catch(()=>[]);
+      const activeDelivery=inProgress?.[0]||null;
       if(prior?.[0]?.state==='observed' && !parsed.isAddOn){
         await patch(`offers?id=eq.${prior[0].id}&driver_id=eq.${driverId}`,{state:'passed'});
         await insert('offer_events',{offer_id:prior[0].id,driver_id:driverId,event:'expired',captured_at:new Date().toISOString(),lat:Number.isFinite(lat)?lat:null,lng:Number.isFinite(lng)?lng:null,zone,market_cell:marketCell});
@@ -66,11 +54,9 @@ export default async function handler(req,res){
         batchId=b?.[0]?.id||null;
       }
       row.batch_id=batchId;
-      if(row.state==='accepted' && batchId)await patch(`batches?id=eq.${batchId}&driver_id=eq.${driverId}`,{state:'active'});
       saved=await insert('offers',row);
       if(saved?.[0]?.id){
         await insert('offer_events',{offer_id:saved[0].id,driver_id:driverId,event:'observed',captured_at:row.captured_at,lat:row.lat,lng:row.lng,zone:row.zone,market_cell:row.market_cell});
-        if(row.state==='accepted')await insert('offer_events',{offer_id:saved[0].id,driver_id:driverId,event:'accepted',captured_at:row.captured_at,lat:row.lat,lng:row.lng,zone:row.zone,market_cell:row.market_cell});
       }
       }
     }catch(error){return res.status(500).json({error:error.message,parsed,rate})}

@@ -3,6 +3,7 @@ import RadarCore
 
 @main struct CourierRadarApp:App {
     @StateObject private var store=RadarStore()
+    @Environment(\.scenePhase) private var scenePhase
     var body:some Scene {
         WindowGroup {
             RootTabView()
@@ -11,7 +12,10 @@ import RadarCore
                 .environmentObject(store.gps)
                 .preferredColorScheme(.dark)
                 .tint(RadarStyle.signal)
-                .task { store.start() }
+                .task { store.gps.startForeground(); store.start() }
+                .onChange(of:scenePhase) { _,phase in
+                    if phase == .active {store.gps.startForeground()}
+                }
         }
     }
 }

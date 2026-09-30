@@ -63,7 +63,7 @@ import RadarCore
                   voltageReadings:voltageReadings,voltageRemindersEnabled:voltageRemindersEnabled)
         if let json=try? JSONEncoder().encode(snapshot){UserDefaults.standard.set(json,forKey:key)}
     }
-    var activeCalibrationDay:String {calibrationEnabled ? calibrationDay : ""}
+    var activeCalibrationDay:String {calibrationEnabled ? calibrationDay : "1900-01-01"}
     var policy:DriverPolicy {
         DriverPolicy(dailyGoal:goal,calibrationDay:activeCalibrationDay,stopTime:stopTime,
             batteryMiles:batteryMiles,lastBatteryUpdate:batteryUpdatedAt,estimatedSpeedMPH:speedMPH)

@@ -55,3 +55,25 @@ Native build: cd ios; xcodegen generate --spec project.yml; xcodebuild -project 
 
 Apple Personal Team rules: https://developer.apple.com/help/account/basics/about-your-developer-account
 Apple background location: https://developer.apple.com/documentation/corelocation/cllocationmanager/allowsbackgroundlocationupdates
+
+
+## iOS shift-ready features (2026-09-29)
+
+- **GPS:** Radar requests a foreground location fix when the app opens or resumes. Only an active Radar shift uploads GPS samples for waiting-time learning.
+- **Waiting advice:** collapsed by default on Home; expand for model evidence and optional navigation.
+- **Action Button:** create an iPhone Shortcut with **Take Screenshot** → **Courier Radar: Analyze Uber Screenshot**. Pass the screenshot image into the Radar action. Assign that Shortcut in iPhone Settings → Action Button → Shortcut. The screenshot is processed by Vision OCR on-device; only text goes to the Radar API. A local alert can show the TAKE/SKIP/CHECK verdict.
+- **No continuous Uber monitoring or over-Uber floating overlay** is installed. iOS doesn't provide arbitrary screen access to third-party apps.
+- **Battery voltage:** tap **VOLTS** on Home while safely stopped. Enter resting voltage and optionally bike trip-odometer miles. Settings → E-bike range chooses a 36V/48V/52V nominal pack and real-world full-charge mileage. Voltage is manually read, not connected to the BMS; percentage and usable miles are rough conservative estimates. The latest 200 readings stay in local iOS preferences.
+- **Reminders:** optionally enable 90-minute local voltage reminders in Settings; they are scheduled on shift start, reset when logging, and canceled on shift end.
+- **Cash model:** estimates total earnings through the selected stop time, including uncertain replacement offers, time, location, battery, and after-dropoff positioning. It is **not** a fixed $/hour filter and does not know Uber's private matching algorithm. Calibration is off by default and must be explicitly enabled.
+- **Verification:** Build on a real iPhone and confirm location, token, one Action Button screenshot, notification permission, voltage profile, and battery reserve before relying on recommendations.
+
+### Pull and compile on a Mac
+
+    git pull --ff-only origin main
+    cd ios
+    swift test
+    xcodegen generate --spec project.yml
+    open CourierRadar.xcodeproj
+
+Select your iPhone and Apple Personal Team, then run (Command-R). The generated AppIcon is resized to 1024 × 1024 by XcodeGen.

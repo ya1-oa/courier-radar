@@ -169,6 +169,7 @@ enum RadarTab:Hashable {case live,history,stats,settings}
             let _:ShiftPayload=try await api.post("/api/shift",json:["action":"end"])
             shiftActive=false
             gps.stop()
+            await RadarDecisionLiveActivity.clear()
             await RadarVoltageReminder.cancel()
             await flushGPS()
             await refresh()
@@ -185,6 +186,7 @@ enum RadarTab:Hashable {case live,history,stats,settings}
             }
             let result:ActionPayload=try await api.post("/api/action",json:body)
             captureState=result.label ?? "Recorded \(result.state ?? state)"
+            await RadarDecisionLiveActivity.clear()
             await refresh()
         }catch{self.error=error.localizedDescription}
     }
@@ -202,6 +204,7 @@ enum RadarTab:Hashable {case live,history,stats,settings}
         }catch{captureState="Capture failed";self.error=error.localizedDescription}
     }
     func sendCapture(text:String) async throws {
+        let capturedAt=Date()
         let api=try endpoint()
         var body:[String:Any]=[
             "text":text,"source":"ios_native_vision","vehicle":prefs.vehicle,
@@ -215,10 +218,19 @@ enum RadarTab:Hashable {case live,history,stats,settings}
         latestResult=result
         lastServerVerdict=result.verdict
         if result.screen?.kind=="lifecycle" {
+            await RadarDecisionLiveActivity.clear()
             captureState=result.updated == true
                 ? "Uber screen → \(result.state ?? "stage recorded")."
                 : "State not advanced: \(result.reason ?? "verify manually")"
         } else {
+            if result.screen?.kind=="offer" || result.verdict != nil {
+                _ = await RadarDecisionLiveActivity.show(
+                    verdict:result.verdict ?? "CHECK",
+                    merchant:result.parsed?.merchant ?? "Uber offer",
+                    payout:Money.dollars(result.parsed?.payout),
+                    reason:result.decision?.reason ?? result.reason ?? "Check Uber before acting.",
+                    capturedAt:capturedAt)
+            }
             captureState=(result.duplicate == true ? "Repeated screenshot · " : "")
                 + (result.verdict ?? "CHECK")+" · "+(result.parsed?.merchant ?? "Uber offer")
         }

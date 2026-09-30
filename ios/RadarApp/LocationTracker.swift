@@ -104,6 +104,7 @@ struct LocationPing:Codable,Sendable {
             let coordinate=GeoPoint(lat:fix.coordinate.latitude,lng:fix.coordinate.longitude)
             guard coordinate.isValid,abs(fix.timestamp.timeIntervalSinceNow)<180 else{return}
             self.point=coordinate
+            RadarRecentGPS.save(coordinate,accuracy:fix.horizontalAccuracy)
             self.onPosition?(coordinate)
             self.accuracy=fix.horizontalAccuracy
             self.locationAge=abs(fix.timestamp.timeIntervalSinceNow)

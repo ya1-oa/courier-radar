@@ -40,6 +40,9 @@ struct RadarCaptureIntent:AppIntent {
             if coord.isValid {json["lat"]=latitude;json["lng"]=longitude}
         }
         if let battery=policy.batteryMiles {json["batteryMiles"]=battery}
+        if json["lat"] == nil,let gps=RadarRecentGPS.latest() {
+            json["lat"]=gps.lat;json["lng"]=gps.lng
+        }
         do{
             let output:CapturePayload=try await api.post("/api/capture",json:json)
             let answer:String

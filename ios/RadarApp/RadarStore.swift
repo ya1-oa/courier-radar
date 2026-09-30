@@ -57,7 +57,7 @@ enum RadarTab:Hashable {case live,history,stats,settings}
         }
     }
     var authReady:Bool { !RadarKeychain.load().isEmpty }
-    var activeOffer:RadarOffer? { offers.first(where: {["accepted","arrived","picked_up"].contains($0.state ?? "")}) }
+    var activeOffer:RadarOffer? { offers.first(where: {["accepted","arrived","picked_up"].contains($0.state ?? "") && Date().timeIntervalSince($0.capturedAt ?? .distantPast) < 4 * 3600}) }
     var latestOffer:RadarOffer? { offers.first }
     var available:Bool {shiftActive && activeOffer == nil}
     var capturedCash:Double {stats?.todayCapturedEarnings ?? 0}

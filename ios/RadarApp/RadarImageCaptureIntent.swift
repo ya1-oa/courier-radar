@@ -6,7 +6,7 @@ import RadarCore
 /// User-triggered screenshot capture for an iPhone Action Button Shortcut.
 /// Shortcut: Take Screenshot -> Analyze Uber Screenshot (pass Screenshot as input).
 /// No continuous access to Uber's screen and no uploaded image.
-struct RadarImageCaptureIntent:AppIntent {
+struct RadarImageCaptureIntent:LiveActivityIntent {
     static var title:LocalizedStringResource="Analyze Uber Screenshot"
     static var description=IntentDescription("Recognize an Uber screenshot on-device and return a cash-first TAKE, SKIP, or CHECK decision.")
     static var openAppWhenRun=false

@@ -4,7 +4,7 @@ options:
   deploymentTarget:
     iOS: "17.0"
   xcodeVersion: "16.0"
-  preGenCommand: swift Tools/MakeAppIcon.swift
+  preGenCommand: swift Tools/MakeAppIcon.swift && sips -z 1024 1024 RadarApp/Assets.xcassets/AppIcon.appiconset/AppIcon.png >/dev/null
 settings:
   base:
     SWIFT_VERSION: "5.9"

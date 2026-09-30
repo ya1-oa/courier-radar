@@ -61,12 +61,12 @@ Apple background location: https://developer.apple.com/documentation/corelocatio
 
 - **GPS:** Radar requests a foreground location fix when the app opens or resumes. Only an active Radar shift uploads GPS samples for waiting-time learning.
 - **Waiting advice:** collapsed by default on Home; expand for model evidence and optional navigation.
-- **Action Button:** create an iPhone Shortcut with **Take Screenshot** → **Courier Radar: Analyze Uber Screenshot**. Pass the screenshot image into the Radar action. Assign that Shortcut in iPhone Settings → Action Button → Shortcut. The screenshot is processed by Vision OCR on-device; only text goes to the Radar API. A local alert can show the TAKE/SKIP/CHECK verdict.
+- **Action Button:** create an iPhone Shortcut with **Take Screenshot** → **Courier Radar: Analyze Uber Screenshot**. Pass the screenshot image into the Radar action. Assign that Shortcut in iPhone Settings → Action Button → Shortcut. The screenshot is processed by Vision OCR on-device; only text goes to the Radar API. A Live Activity displays TAKE/SKIP/CHECK in Dynamic Island on supported iPhones and on the Lock Screen. Long-press Dynamic Island to read the reason. It replaces the local decision notification.
 - **No continuous Uber monitoring or over-Uber floating overlay** is installed. iOS doesn't provide arbitrary screen access to third-party apps.
 - **Battery voltage:** tap **VOLTS** on Home while safely stopped. Enter resting voltage and optionally bike trip-odometer miles. Settings → E-bike range chooses a 36V/48V/52V nominal pack and real-world full-charge mileage. Voltage is manually read, not connected to the BMS; percentage and usable miles are rough conservative estimates. The latest 200 readings stay in local iOS preferences.
 - **Reminders:** optionally enable 90-minute local voltage reminders in Settings; they are scheduled on shift start, reset when logging, and canceled on shift end.
 - **Cash model:** estimates total earnings through the selected stop time, including uncertain replacement offers, time, location, battery, and after-dropoff positioning. It is **not** a fixed $/hour filter and does not know Uber's private matching algorithm. Calibration is off by default and must be explicitly enabled.
-- **Verification:** Build on a real iPhone and confirm location, token, one Action Button screenshot, notification permission, voltage profile, and battery reserve before relying on recommendations.
+- **Verification:** Build on a real iPhone and confirm location, token, one Action Button screenshot, Live Activities enabled, voltage profile, and battery reserve before relying on recommendations.
 
 ### Pull and compile on a Mac
 
@@ -79,3 +79,14 @@ Apple background location: https://developer.apple.com/documentation/corelocatio
 Select your iPhone and Apple Personal Team, then run (Command-R). The generated AppIcon is resized to 1024 × 1024 by XcodeGen.
 
 Remote CI is intentionally skipped for this source-only update; run `swift test` and Xcode locally. The iPhone build has not yet been verified on your device.
+
+## Dynamic Island TAKE / SKIP / CHECK (ActivityKit)
+
+- This is a system-managed **Live Activity**, not an overlay window. It can appear in Dynamic Island while Uber is foreground on compatible iPhones; on other iPhones, the supported presentation is on the Lock Screen.
+- iPhone Settings → Apps → Courier Radar → Live Activities → On. In Radar Settings, use **TEST DYNAMIC ISLAND** to verify the widget extension and signing.
+- The Action Button Shortcut stays **Take Screenshot → Analyze Uber Screenshot**. The intent conforms to LiveActivityIntent so iOS can start the activity without switching to Radar. Native screenshot capture in Radar also updates the same activity.
+- The compact island shows the verdict and payout; press and hold for merchant, reasoning, and an expiration countdown. This is a **snapshot**, not a live Uber connection. Radar sets a 45-second stale date from the start of capture and changes stale content to **EXPIRED**. Uber's own offer may expire earlier.
+- When an order stage is recorded or the shift ends, Radar ends its Live Activity. iOS may keep an expired Live Activity visible until dismissed or replaced; always check the actual Uber offer.
+- XcodeGen creates a second target, **RadarDecisionWidget**. Both **CourierRadar** and **RadarDecisionWidget** must use your Apple Personal Team; if you change the app's bundle identifier, give the widget a matching prefix and .decisionwidget suffix.
+- The implementation does not continuously monitor Uber or draw a movable window over it. It does not accept/decline orders automatically.
+- This source change needs a real-device Xcode build and Action Button test; a source push alone does not validate iOS signing or Dynamic Island presentation.

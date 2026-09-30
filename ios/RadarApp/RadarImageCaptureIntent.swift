@@ -15,6 +15,7 @@ struct RadarImageCaptureIntent:AppIntent {
     var screenshot:IntentFile
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        let capturedAt=Date()
         guard let image=UIImage(data:screenshot.data) else {
             return .result(dialog:IntentDialog(stringLiteral:"Radar couldn't open the screenshot."))
         }
@@ -44,17 +45,23 @@ struct RadarImageCaptureIntent:AppIntent {
             if let miles=policy.batteryMiles {payload["batteryMiles"]=miles}
             if let gps=RadarRecentGPS.latest() {payload["lat"]=gps.lat;payload["lng"]=gps.lng}
             let result:CapturePayload=try await api.post("/api/capture",json:payload)
-            let message:String
+            var message:String
             if result.screen?.kind=="lifecycle" {
+                await RadarDecisionLiveActivity.clear()
                 message=result.updated == true ?
                     "Radar recorded \(result.state ?? "delivery stage")." :
                     "No stage change: \(result.reason ?? "check Uber first")."
             } else {
                 let why=String((result.decision?.reason ?? result.reason ?? "Verify the Uber offer before acting.").prefix(130))
                 message="\(result.verdict ?? "CHECK") · \(result.parsed?.merchant ?? "Uber offer") · \(Money.dollars(result.parsed?.payout)). \(why)"
-                await RadarCaptureNotification.show(
-                    title:"Radar: \(result.verdict ?? "CHECK")",
-                    body:"\(result.parsed?.merchant ?? "Uber offer") · \(Money.dollars(result.parsed?.payout)) · \(why)")
+                let displayed=await RadarDecisionLiveActivity.show(
+                    verdict:result.verdict ?? "CHECK",
+                    merchant:result.parsed?.merchant ?? "Uber offer",
+                    payout:Money.dollars(result.parsed?.payout),
+                    reason:why,capturedAt:capturedAt)
+                if !displayed {
+                    message+=". Dynamic Island unavailable: enable Live Activities for Radar."
+                }
             }
             return .result(dialog:IntentDialog(stringLiteral:message))
         } catch {

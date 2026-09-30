@@ -24,6 +24,7 @@ struct LocationPing:Codable,Sendable {
     @Published private(set) var recording=false
     @Published private(set) var status="Location inactive"
     var onPing:((LocationPing)->Void)?
+    var onPosition:((GeoPoint)->Void)?
 
     private let locationManager=CLLocationManager()
     private var lastSentAt:Date = .distantPast
@@ -38,11 +39,21 @@ struct LocationPing:Codable,Sendable {
         locationManager.activityType = .fitness
         locationManager.pausesLocationUpdatesAutomatically=false
     }
-    func requestPermission() {
-        if locationManager.authorizationStatus == .notDetermined {
+    /// Foreground GPS works without an active Radar shift; uploads remain shift-only.
+    func startForeground() {
+        switch locationManager.authorizationStatus {
+        case .authorizedAlways,.authorizedWhenInUse:
+            locationManager.allowsBackgroundLocationUpdates=recording
+            locationManager.startUpdatingLocation()
+            status=recording ? "GPS tracking shift" : "Locating…"
+        case .notDetermined:
+            status="Allow location access"
             locationManager.requestWhenInUseAuthorization()
+        default:
+            status="Location denied — open iOS Settings"
         }
     }
+    func requestPermission() {startForeground()}
     func start(vehicle:String="ebike") {
         recording=true
         requestPermission()
@@ -57,9 +68,8 @@ struct LocationPing:Codable,Sendable {
         if recording{sendVerifiedPing(event:"shift_end",vehicle:"ebike")}
         recording=false
         heartbeat?.invalidate();heartbeat=nil
-        locationManager.stopUpdatingLocation()
         locationManager.allowsBackgroundLocationUpdates=false
-        status="GPS stopped"
+        startForeground()
     }
     private func beginLocationIfAuthorized(){
         switch locationManager.authorizationStatus {
@@ -91,7 +101,10 @@ struct LocationPing:Codable,Sendable {
             guard let self else{return}
             guard fix.horizontalAccuracy>=0,fix.horizontalAccuracy<=350 else{return}
             self.latestLocation=fix
-            self.point=GeoPoint(lat:fix.coordinate.latitude,lng:fix.coordinate.longitude)
+            let coordinate=GeoPoint(lat:fix.coordinate.latitude,lng:fix.coordinate.longitude)
+            guard coordinate.isValid,abs(fix.timestamp.timeIntervalSinceNow)<180 else{return}
+            self.point=coordinate
+            self.onPosition?(coordinate)
             self.accuracy=fix.horizontalAccuracy
             self.locationAge=abs(fix.timestamp.timeIntervalSinceNow)
             self.status=String(format:"GPS ±%.0fm",fix.horizontalAccuracy)
@@ -103,6 +116,7 @@ struct LocationPing:Codable,Sendable {
             guard let self else{return}
             self.authorization=manager.authorizationStatus
             if self.recording{self.beginLocationIfAuthorized()}
+            else{self.startForeground()}
         }
     }
     nonisolated func locationManager(_ manager:CLLocationManager,didFailWithError error:Error){

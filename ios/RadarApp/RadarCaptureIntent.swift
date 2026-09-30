@@ -50,6 +50,9 @@ struct RadarCaptureIntent:AppIntent {
             }else{
                 answer="\(output.verdict ?? "CHECK") · \(output.parsed?.merchant ?? "Uber offer") · \(Money.dollars(output.parsed?.payout))"
             }
+            if output.screen?.kind=="offer" {
+                await RadarCaptureNotification.show(title:"Radar: \(output.verdict ?? "CHECK")",body:answer)
+            }
             return .result(dialog:IntentDialog(stringLiteral:answer))
         }catch{
             return .result(dialog:IntentDialog(stringLiteral:"Radar capture failed: \(error.localizedDescription)"))
@@ -59,8 +62,11 @@ struct RadarCaptureIntent:AppIntent {
 
 struct RadarAppShortcuts:AppShortcutsProvider {
     static var appShortcuts:[AppShortcut] {
-            AppShortcut(intent:RadarCaptureIntent(),
-                phrases:["Analyze an Uber screenshot with \(.applicationName)"],
-                shortTitle:"Analyze Uber Screen",systemImageName:"text.viewfinder")
+        AppShortcut(intent:RadarImageCaptureIntent(),
+            phrases:["Analyze an Uber screenshot with \(.applicationName)"],
+            shortTitle:"Analyze Uber Screenshot",systemImageName:"camera.viewfinder")
+        AppShortcut(intent:RadarCaptureIntent(),
+            phrases:["Analyze Uber text with \(.applicationName)"],
+            shortTitle:"Analyze Uber Text",systemImageName:"text.viewfinder")
     }
 }

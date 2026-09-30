@@ -30,6 +30,7 @@ enum RadarTab:Hashable {case live,history,stats,settings}
     private var refreshTask:Task<Void,Never>?
     private var pingQueue:[LocationPing]=[]
     private var flushing=false
+    private var lastDecisionLocationAt:Date = .distantPast
     private let queueKey="RadarPendingGPSSamplesV1"
 
     init(){
@@ -38,7 +39,15 @@ enum RadarTab:Hashable {case live,history,stats,settings}
             pingQueue=queue.filter{ Date().timeIntervalSince($0.capturedAt)<36*3600 }
         }
         pendingGPS=pingQueue.count
-        gps.onPosition = { [weak self] _ in self?.updateDecisions() }
+        gps.onPosition = { [weak self] _ in
+            guard let self else{return}
+            let zone=MarketZone.identify(self.gps.point)
+            if self.recommendations["wait"]?.zone != zone ||
+               Date().timeIntervalSince(self.lastDecisionLocationAt)>45 {
+                self.lastDecisionLocationAt=Date()
+                self.updateDecisions()
+            }
+        }
         gps.onPing = { [weak self] ping in
             guard let self else{return}
             self.queuePing(ping)

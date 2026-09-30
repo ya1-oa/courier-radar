@@ -63,7 +63,9 @@ struct SettingsView:View {
                             .font(.system(size:13,weight:.medium))
                         DatePicker("Stop working at",selection:$stopClock,displayedComponents:.hourAndMinute)
                             .font(.system(size:13,weight:.medium))
-                        Text("Calibration accepts feasible orders. From the next workday, evidence-based TAKE/SKIP becomes active; low-data periods continue favoring guaranteed cash.")
+                        Toggle("Take-all calibration mode",isOn:$prefs.calibrationEnabled)
+                            .font(.system(size:13))
+                        Text("Off by default. Turn on only for a deliberate data-collection day. Normal mode maximizes estimated end-of-shift cash, not hourly pay.")
                             .font(.system(size:11)).foregroundStyle(RadarStyle.subtle)
                         RadarActionButton(title:"SAVE POLICY",systemImage:"checkmark",highlighted:true) {
                             prefs.calibrationDay=formattedDay(trainingDate)
@@ -76,6 +78,24 @@ struct SettingsView:View {
                 RadarCard{
                     VStack(alignment:.leading,spacing:12){
                         Text("E-bike range").font(.system(size:17,weight:.bold))
+                        Picker("Battery pack",selection:$prefs.batteryNominalVolts) {
+                            Text("36V").tag(36)
+                            Text("48V").tag(48)
+                            Text("52V").tag(52)
+                        }.pickerStyle(.segmented)
+                        Stepper("Full-charge real range: \(Int(prefs.fullChargeMiles)) miles",
+                            value:$prefs.fullChargeMiles,in:5...100,step:1)
+                            .font(.system(size:12))
+                        Toggle("Voltage reminder every 90 minutes",isOn:$prefs.voltageRemindersEnabled)
+                            .font(.system(size:12))
+                            .onChange(of:prefs.voltageRemindersEnabled) {_,enabled in
+                                Task {
+                                    if enabled && store.shiftActive {await RadarVoltageReminder.schedule()}
+                                    else {await RadarVoltageReminder.cancel()}
+                                }
+                            }
+                        Text("Manual reading: \(prefs.batteryVoltage.map{String(format:"%.1fV",$0)} ?? "not recorded")")
+                            .font(.system(size:12))
                         Text("Current estimated miles left: \(store.inferredBatteryMiles.map{Money.number($0)} ?? "unknown")")
                             .font(.system(size:13,weight:.medium)).foregroundStyle(RadarStyle.signal)
                         TextField("Miles after last charge (e.g. 20)",text:$batteryText)
@@ -96,7 +116,9 @@ struct SettingsView:View {
                                 Task{await store.syncPolicy()}
                             }
                         }
-                        Text("This is an approximate range ledger, not physical battery telemetry. Radar subtracts captured trip distances with a reserve; confirm remaining range yourself.")
+                        Text("Enter resting voltage using Home → VOLTS. The optional journal records timestamps and bike trip mileage; voltage is not live BMS telemetry or a precise charge percentage.")
+                            .font(.system(size:11)).foregroundStyle(RadarStyle.subtle)
+                        Text("Radar subtracts captured trip distances from your estimate. Verify remaining range on your bike.")
                             .font(.system(size:11)).foregroundStyle(RadarStyle.subtle)
                     }
                 }
@@ -125,15 +147,15 @@ struct SettingsView:View {
                 RadarCard {
                     VStack(alignment:.leading,spacing:13) {
                         Text("Fast Uber screen capture").font(.system(size:17,weight:.bold))
-                        Text("1. In Shortcuts create: Take Screenshot → Extract Text from Image → Radar: Analyze Uber Screen.")
+                        Text("1. Create a Shortcut: Take Screenshot → Radar: Analyze Uber Screenshot. Pass the screenshot image into the Screenshot input.")
                             .font(.system(size:12))
-                        Text("2. Pass the extracted text into the Radar action. Optional: pass Latitude and Longitude from Get Current Location.")
+                        Text("2. iPhone Settings → Action Button → Shortcut → choose your new Shortcut. The screenshot is OCR'd on-device.")
                             .font(.system(size:12))
-                        Text("3. Settings → Accessibility → Touch → Back Tap → Double Tap → your Shortcut.")
+                        Text("3. You can also assign it to Back Tap. For text-only capture use the older Analyze Uber Text action.")
                             .font(.system(size:12))
                         Text("You can also choose a screenshot on Home. OCR runs on your iPhone; Radar sends recognized text, not the image, to your own server.")
                             .font(.system(size:11)).foregroundStyle(RadarStyle.subtle)
-                        Label("No silent screen monitoring of Uber is installed.",
+                        Label("No silent Uber monitoring or floating over-Uber overlay is installed.",
                               systemImage:"hand.raised").font(.system(size:11))
                             .foregroundStyle(RadarStyle.amber)
                     }

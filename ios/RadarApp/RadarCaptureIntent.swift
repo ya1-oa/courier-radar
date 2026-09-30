@@ -6,7 +6,7 @@ import RadarCore
 /// Take Screenshot -> Extract Text from Image -> Radar: Analyze Uber Screen.
 /// The recognized text stays on-device until this explicit user-initiated action.
 /// Keychain access does not require handing the private token to iOS Shortcuts.
-struct RadarCaptureIntent:AppIntent {
+struct RadarCaptureIntent:LiveActivityIntent {
     static var title:LocalizedStringResource="Analyze Uber Screen"
     static var description=IntentDescription("Send recognized text from an Uber Driver screenshot to your private Courier Radar server.")
     static var openAppWhenRun=false

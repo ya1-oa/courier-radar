@@ -13,6 +13,7 @@ struct HomeView:View {
     @State private var selectedScreenshot:PhotosPickerItem?
     @State private var activeOfferExpanded=false
     @State private var confirmFinish=false
+    @State private var waitExpanded=false
 
     private var zones:[DispatchZone] {
         (store.stats?.dispatchModel?.zones ?? []).filter {
@@ -179,53 +180,55 @@ struct HomeView:View {
     @ViewBuilder private var waitPanel:some View {
         let decision=store.waitAdvice
         RadarCard {
-            HStack(alignment:.top,spacing:12){
-                VStack(alignment:.leading,spacing:5){
-                    HStack(spacing:7){
-                        RadarPill(text:decision.kind.rawValue,
-                                  color:decision.kind == .charge ? RadarStyle.amber:RadarStyle.signal)
-                        RadarKicker(text:decision.zone ?? "GPS learning")
+            VStack(alignment:.leading,spacing:8) {
+                HStack(spacing:9) {
+                    RadarPill(text:decision.kind.rawValue,
+                        color:decision.kind == .charge ? RadarStyle.amber:RadarStyle.signal)
+                    VStack(alignment:.leading,spacing:2) {
+                        Text(decision.destination ?? decision.zone ?? "GPS learning")
+                            .font(.system(size:12,weight:.bold)).lineLimit(1)
+                        Text(store.gps.point == nil ? store.gps.status :
+                            (decision.kind == .move ? "Suggested reposition" : "Waiting advice"))
+                            .font(.system(size:10)).foregroundStyle(RadarStyle.subtle).lineLimit(1)
                     }
-                    Text(decision.destination.map{"\($0) · evidence-backed destination"} ??
-                         (decision.zone ?? "Waiting for location"))
-                        .font(.system(size:14,weight:.bold))
-                        .lineLimit(2)
+                    Spacer(minLength:4)
+                    Button {withAnimation(.easeInOut(duration:0.2)){waitExpanded.toggle()}} label:{
+                        Image(systemName:waitExpanded ? "chevron.up" : "chevron.down")
+                            .font(.system(size:13,weight:.bold))
+                            .frame(width:36,height:36)
+                            .background(RadarStyle.inset,in:RoundedRectangle(cornerRadius:10))
+                    }.buttonStyle(.plain)
+                }
+                if waitExpanded {
                     Text(decision.reason)
-                        .font(.system(size:11))
-                        .foregroundStyle(RadarStyle.subtle)
-                        .lineLimit(3)
+                        .font(.system(size:11)).foregroundStyle(RadarStyle.subtle)
+                        .fixedSize(horizontal:false,vertical:true)
                     if let advantage=decision.expectedAdvantage {
                         Text("Estimated additional cash: \(Money.dollars(advantage))")
-                            .font(.system(size:11,weight:.bold)).foregroundStyle(RadarStyle.signal)
+                            .font(.system(size:11,weight:.bold))
+                            .foregroundStyle(RadarStyle.signal)
                     }
-                    let m=store.stats?.dispatchModel
-                    Text("\(m?.offersObservedAvailable ?? 0) matched offers · " +
-                         "\(Int(m?.verifiedAvailableMinutes ?? 0)) GPS-verified minutes")
-                        .font(.system(size:10,weight:.medium))
-                        .foregroundStyle(RadarStyle.subtle)
-                }
-                Spacer(minLength:3)
-                if decision.kind == .move || decision.kind == .returning,
-                   let name=decision.destination,
-                   let target=zones.first(where:{$0.zone == name}),let coord=target.point {
-                    Button{
-                        let item=MKMapItem(placemark:MKPlacemark(
-                            coordinate:CLLocationCoordinate2D(latitude:coord.lat,longitude:coord.lng)))
-                        item.name=name
-                        item.openInMaps(launchOptions:[MKLaunchOptionsDirectionsModeKey:MKLaunchOptionsDirectionsModeWalking])
-                    }label:{
-                        Image(systemName:"arrow.triangle.turn.up.right.diamond.fill")
-                            .font(.system(size:21)).foregroundStyle(RadarStyle.signal)
-                            .frame(width:38,height:38).background(RadarStyle.inset,
-                              in:RoundedRectangle(cornerRadius:12))
-                    }.buttonStyle(.plain)
-                } else {
-                    Button{Task{await store.refresh()}}label:{
-                        Image(systemName:"arrow.clockwise")
-                            .font(.system(size:15,weight:.bold))
-                            .frame(width:38,height:38).background(RadarStyle.inset,
-                                in:RoundedRectangle(cornerRadius:12))
-                    }.buttonStyle(.plain)
+                    let model=store.stats?.dispatchModel
+                    Text("\(model?.offersObservedAvailable ?? 0) matched offers · \(Int(model?.verifiedAvailableMinutes ?? 0)) GPS-verified minutes")
+                        .font(.system(size:10)).foregroundStyle(RadarStyle.subtle)
+                    HStack {
+                        if (decision.kind == .move || decision.kind == .returning),
+                           let name=decision.destination,
+                           let zone=zones.first(where:{$0.zone==name}),
+                           let coord=zone.point {
+                            Button {
+                                let item=MKMapItem(placemark:MKPlacemark(
+                                    coordinate:CLLocationCoordinate2D(latitude:coord.lat,longitude:coord.lng)))
+                                item.name=name
+                                item.openInMaps(launchOptions:[
+                                    MKLaunchOptionsDirectionsModeKey:MKLaunchOptionsDirectionsModeWalking])
+                            } label: {Label("NAVIGATE",systemImage:"arrow.triangle.turn.up.right.diamond.fill")}
+                        }
+                        Spacer()
+                        Button {Task{await store.refresh()}} label:{
+                            Label("REFRESH",systemImage:"arrow.clockwise")
+                        }
+                    }.font(.system(size:11,weight:.bold)).foregroundStyle(RadarStyle.signal)
                 }
             }
         }

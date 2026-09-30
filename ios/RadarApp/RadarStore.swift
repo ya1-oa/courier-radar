@@ -38,6 +38,7 @@ enum RadarTab:Hashable {case live,history,stats,settings}
             pingQueue=queue.filter{ Date().timeIntervalSince($0.capturedAt)<36*3600 }
         }
         pendingGPS=pingQueue.count
+        gps.onPosition = { [weak self] _ in self?.updateDecisions() }
         gps.onPing = { [weak self] ping in
             guard let self else{return}
             self.queuePing(ping)

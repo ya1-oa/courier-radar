@@ -66,6 +66,7 @@ export default async function handler(req,res){
         batchId=b?.[0]?.id||null;
       }
       row.batch_id=batchId;
+      if(row.state==='accepted' && batchId)await patch(`batches?id=eq.${batchId}&driver_id=eq.${driverId}`,{state:'active'});
       saved=await insert('offers',row);
       if(saved?.[0]?.id){
         await insert('offer_events',{offer_id:saved[0].id,driver_id:driverId,event:'observed',captured_at:row.captured_at,lat:row.lat,lng:row.lng,zone:row.zone,market_cell:row.market_cell});

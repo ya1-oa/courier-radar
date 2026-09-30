@@ -28,6 +28,7 @@ targets:
       - path: RadarApp
         excludes:
           - Info.plist
+      - path: RadarShared
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.courierradar.native
@@ -38,8 +39,27 @@ targets:
         CODE_SIGN_STYLE: Automatic
     dependencies:
       - package: RadarCore
+      - target: RadarDecisionWidget
+        embed: true
     scheme:
       testTargets: []
+  RadarDecisionWidget:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: RadarDecisionWidget
+        excludes:
+          - Info.plist
+      - path: RadarShared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.courierradar.native.decisionwidget
+        PRODUCT_NAME: RadarDecisionWidget
+        INFOPLIST_FILE: RadarDecisionWidget/Info.plist
+        CODE_SIGN_STYLE: Automatic
+        SKIP_INSTALL: YES
+        APPLICATION_EXTENSION_API_ONLY: YES
 schemes:
   CourierRadar:
     build:

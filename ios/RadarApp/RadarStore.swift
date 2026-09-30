@@ -67,7 +67,7 @@ enum RadarTab:Hashable {case live,history,stats,settings}
         return max(0,start-used*1.2)
     }
     func policyNow() -> DriverPolicy {
-        DriverPolicy(dailyGoal:prefs.goal,calibrationDay:prefs.calibrationDay,
+        DriverPolicy(dailyGoal:prefs.goal,calibrationDay:prefs.activeCalibrationDay,
                      stopTime:prefs.stopTime,batteryMiles:inferredBatteryMiles,
                      lastBatteryUpdate:prefs.batteryUpdatedAt,estimatedSpeedMPH:prefs.speedMPH)
     }
@@ -149,6 +149,7 @@ enum RadarTab:Hashable {case live,history,stats,settings}
             guard result.shift != nil else{throw RadarAPIError.invalidData}
             shiftActive=true
             gps.start(vehicle:prefs.vehicle)
+            if prefs.voltageRemindersEnabled {await RadarVoltageReminder.schedule()}
             await refresh()
         }catch{self.error=error.localizedDescription}
     }
@@ -159,6 +160,7 @@ enum RadarTab:Hashable {case live,history,stats,settings}
             let _:ShiftPayload=try await api.post("/api/shift",json:["action":"end"])
             shiftActive=false
             gps.stop()
+            await RadarVoltageReminder.cancel()
             await flushGPS()
             await refresh()
         }catch{self.error=error.localizedDescription}
@@ -195,7 +197,7 @@ enum RadarTab:Hashable {case live,history,stats,settings}
         var body:[String:Any]=[
             "text":text,"source":"ios_native_vision","vehicle":prefs.vehicle,
             "remainingMinutes":WorkClock.minutesUntilStop(now:Date(),clock:prefs.stopTime),
-            "calibrationDay":prefs.calibrationDay,"stopTime":prefs.stopTime,
+            "calibrationDay":prefs.activeCalibrationDay,"stopTime":prefs.stopTime,
             "dailyEarned":verifiedCash
         ]
         if let b=inferredBatteryMiles{body["batteryMiles"]=b}
@@ -217,6 +219,16 @@ enum RadarTab:Hashable {case live,history,stats,settings}
             lastPredictionDisagreement=native.kind.rawValue != result.verdict
         }
     }
+    func recordVoltage(_ volts:Double,tripMiles:Double?=nil) async {
+        guard prefs.updateVoltage(volts,tripMiles:tripMiles) else {
+            error="Voltage is outside the selected pack profile. Check the battery label."
+            return
+        }
+        status=String(format:"Saved %.1fV · estimated %.1f mi left",volts,inferredBatteryMiles ?? 0)
+        updateDecisions()
+        if shiftActive && prefs.voltageRemindersEnabled {await RadarVoltageReminder.schedule()}
+        if authReady {await syncPolicy()}
+    }
     func syncUberTotal(_ amount:Double) async {
         guard amount>=0,amount<=5000 else{error="Enter Uber's displayed daily total.";return}
         do {
@@ -229,7 +241,7 @@ enum RadarTab:Hashable {case live,history,stats,settings}
     func syncPolicy() async {
         do {
             let api=try endpoint()
-            var body:[String:Any]=["calibrationDay":prefs.calibrationDay,
+            var body:[String:Any]=["calibrationDay":prefs.activeCalibrationDay,
               "stopTime":prefs.stopTime]
             if let battery=inferredBatteryMiles {body["batteryMiles"]=battery}
             else {body["batteryMiles"]=NSNull()}

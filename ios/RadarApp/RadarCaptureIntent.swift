@@ -21,6 +21,7 @@ struct RadarCaptureIntent:AppIntent {
     var longitude:Double?
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        let capturedAt=Date()
         let config=await MainActor.run {LocalPreferences()}
         let token=RadarKeychain.load()
         guard !token.isEmpty else {
@@ -53,8 +54,15 @@ struct RadarCaptureIntent:AppIntent {
             }else{
                 answer="\(output.verdict ?? "CHECK") · \(output.parsed?.merchant ?? "Uber offer") · \(Money.dollars(output.parsed?.payout))"
             }
-            if output.screen?.kind=="offer" {
-                await RadarCaptureNotification.show(title:"Radar: \(output.verdict ?? "CHECK")",body:answer)
+            if output.screen?.kind=="lifecycle" {
+                await RadarDecisionLiveActivity.clear()
+            } else if output.screen?.kind=="offer" || output.verdict != nil {
+                let why=output.decision?.reason ?? output.reason ?? "Check the Uber offer before acting."
+                _ = await RadarDecisionLiveActivity.show(
+                    verdict:output.verdict ?? "CHECK",
+                    merchant:output.parsed?.merchant ?? "Uber offer",
+                    payout:Money.dollars(output.parsed?.payout),
+                    reason:why,capturedAt:capturedAt)
             }
             return .result(dialog:IntentDialog(stringLiteral:answer))
         }catch{

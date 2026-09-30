@@ -218,6 +218,28 @@ if($('copyCaptureEndpoint'))$('copyCaptureEndpoint').onclick=async()=>{
  catch{const el=$('captureEndpoint');el?.focus();el?.select();$('copyCaptureEndpoint').textContent='Select URL above and copy'}
  setTimeout(()=>{if($('copyCaptureEndpoint'))$('copyCaptureEndpoint').textContent='Copy endpoint'},1800);
 };
+if($('revealToken'))$('revealToken').onclick=()=>{
+ const input=$('token'),button=$('revealToken');
+ if(!input||!button)return;
+ const visible=input.type==='text';
+ input.type=visible?'password':'text';
+ button.textContent=visible?'Show token':'Hide token';
+ button.setAttribute('aria-pressed',String(!visible));
+};
+if($('copyToken'))$('copyToken').onclick=async()=>{
+ const button=$('copyToken');
+ const value=token();
+ if(!value){button.textContent='No saved token';setTimeout(()=>button.textContent='Copy token',1800);return;}
+ try{
+  await navigator.clipboard.writeText(value);
+  button.textContent='Copied ✓';
+ }catch{
+  const input=$('token');
+  if(input){input.type='text';input.value=value;input.focus();input.select();}
+  button.textContent='Select and copy';
+ }
+ setTimeout(()=>{button.textContent='Copy token';},2200);
+};
 if($('saveToken'))$('saveToken').onclick=async()=>{const value=$('token').value.trim();if(!value){alert('Paste your capture token first.');return}localStorage.setItem(TOKEN_KEY,value);$('saveToken').textContent='Saved ✓';$('saveToken').disabled=true;try{await refreshData();$('saveToken').textContent='Saved ✓'}catch{}setTimeout(()=>{$('saveToken').textContent='Save token';$('saveToken').disabled=false},1800)};if($('testBtn'))$('testBtn').onclick=testCapture;if($('quickNext'))$('quickNext').onclick=async()=>{const btn=$('quickNext');if(btn?.disabled)return;btn.disabled=true;try{await mark('next')}finally{btn.disabled=false}};if($('acceptBtn'))$('acceptBtn').onclick=()=>mark('accepted');if($('rejectBtn'))$('rejectBtn').onclick=()=>mark('rejected');if($('cancelOrderBtn'))$('cancelOrderBtn').onclick=cancelActiveOrder;if($('shiftBtn'))$('shiftBtn').onclick=()=>{haptic([25,35,25]);toggleShift()};if($('closeRecap'))$('closeRecap').onclick=()=>$('shiftRecap').classList.add('hidden');if($('recapDone'))$('recapDone').onclick=()=>$('shiftRecap').classList.add('hidden');if($('hudToggle')){const stage=document.querySelector('.radar-stage');stage?.classList.remove('hud-docked');$('hudToggle').setAttribute('aria-expanded','true');$('hudToggle').onclick=()=>{const docked=!stage?.classList.contains('hud-docked');stage?.classList.toggle('hud-docked',docked);$('hudToggle').setAttribute('aria-expanded',String(!docked));setTimeout(()=>{window.dispatchEvent(new Event('resize'));renderMap()},180)}};if($('startPlanRefresh'))$('startPlanRefresh').onclick=async()=>{haptic(18);await pingPresence('manual_sync');await refreshData();renderStartPlan()};if($('routeToTarget'))$('routeToTarget').onclick=()=>{logRecommendation('route_learned');openRoute('apple')};if($('routeApple'))$('routeApple').onclick=()=>{logRecommendation('route_apple');openRoute('apple')};if($('routeGoogle'))$('routeGoogle').onclick=()=>{logRecommendation('route_google');openRoute('google')};if($('chooseZone'))$('chooseZone').onclick=()=>{renderZonePicker();$('zonePicker')?.classList.toggle('hidden')};if($('locateBtn'))$('locateBtn').onclick=async()=>{await getLocation();await centerRadarMap(position);await renderMap()};if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){pingPresence('visible');refreshData()}});setInterval(()=>{updateClock();updateServerClock();renderIdleCommand()},1000);setInterval(refreshData,12000);startHeartbeat();showOnboard();getLocation().catch(()=>null).finally(()=>{refreshData();renderMap()});render();renderIdleCommand();
 async function importUberCsv(){const file=$('earningsFile')?.files?.[0];if(!file){$('importStatus').textContent='Choose an Uber CSV first.';return}const text=await file.text(),lines=text.split(/\r?\n/).filter(Boolean);if(lines.length<2){$('importStatus').textContent='CSV appears empty.';return}const parse=line=>{const out=[];let cur='',q=false;for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"'){if(q&&line[i+1]==='"'){cur+='"';i++}else q=!q}else if(ch===','&&!q){out.push(cur);cur=''}else cur+=ch}out.push(cur);return out};const headers=parse(lines[0]).map(x=>x.trim().toLowerCase());const amountIdx=headers.findIndex(h=>/earnings|amount|fare|payout|net/.test(h)),dateIdx=headers.findIndex(h=>/date|time/.test(h)),tripIdx=headers.findIndex(h=>/trip.*id|uuid|id/.test(h));if(amountIdx<0){$('importStatus').textContent='Could not identify an earnings/amount column.';return}const rows=[];for(const line of lines.slice(1)){const v=parse(line),amount=Number(String(v[amountIdx]||'').replace(/[$,]/g,''));if(!Number.isFinite(amount))continue;rows.push({amount,date:v[dateIdx]||new Date().toISOString(),external_id:v[tripIdx]||undefined,source:'uber_csv'})}$('importEarnings').disabled=true;$('importStatus').textContent=`Importing ${rows.length} rows…`;try{const out=await api('/api/earnings',{method:'POST',body:JSON.stringify({rows})});$('importStatus').textContent=`Imported ${out.saved} earnings rows ✓`;await refreshData()}catch(e){$('importStatus').textContent=e.message}finally{$('importEarnings').disabled=false}}
 if($('importEarnings'))$('importEarnings').onclick=importUberCsv;

@@ -50,10 +50,11 @@ struct RadarImageCaptureIntent:AppIntent {
                     "Radar recorded \(result.state ?? "delivery stage")." :
                     "No stage change: \(result.reason ?? "check Uber first")."
             } else {
-                message="\(result.verdict ?? "CHECK") · \(result.parsed?.merchant ?? "Uber offer") · \(Money.dollars(result.parsed?.payout))"
+                let why=String((result.decision?.reason ?? result.reason ?? "Verify the Uber offer before acting.").prefix(130))
+                message="\(result.verdict ?? "CHECK") · \(result.parsed?.merchant ?? "Uber offer") · \(Money.dollars(result.parsed?.payout)). \(why)"
                 await RadarCaptureNotification.show(
                     title:"Radar: \(result.verdict ?? "CHECK")",
-                    body:"\(result.parsed?.merchant ?? "Uber offer") · \(Money.dollars(result.parsed?.payout)) · Check Uber before acting.")
+                    body:"\(result.parsed?.merchant ?? "Uber offer") · \(Money.dollars(result.parsed?.payout)) · \(why)")
             }
             return .result(dialog:IntentDialog(stringLiteral:message))
         } catch {

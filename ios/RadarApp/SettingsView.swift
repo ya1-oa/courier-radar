@@ -155,7 +155,23 @@ struct SettingsView:View {
                             .font(.system(size:12))
                         Text("You can also choose a screenshot on Home. OCR runs on your iPhone; Radar sends recognized text, not the image, to your own server.")
                             .font(.system(size:11)).foregroundStyle(RadarStyle.subtle)
-                        Label("No silent Uber monitoring or floating over-Uber overlay is installed.",
+                        Text("With Live Activities enabled, Radar shows TAKE/SKIP/CHECK in Dynamic Island after a user-triggered capture. Long-press it for the reason. On other iPhones, the Live Activity is available on the Lock Screen.")
+                            .font(.system(size:11)).foregroundStyle(RadarStyle.subtle)
+                        Text("iPhone Settings → Apps → Courier Radar → Live Activities: ON. Dynamic Island cannot be a movable window over Uber.")
+                            .font(.system(size:11)).foregroundStyle(RadarStyle.subtle)
+                        RadarActionButton(title:"TEST DYNAMIC ISLAND",systemImage:"rectangle.topthird.inset.filled",
+                                          highlighted:false) {
+                            Task {
+                                let ok=await RadarDecisionLiveActivity.show(
+                                    verdict:"CHECK",merchant:"Test offer — not real",
+                                    payout:"$8.50",reason:"Preview only. No Uber offer captured.",
+                                    capturedAt:Date())
+                                if !ok {
+                                    store.error="Live Activities unavailable. Enable Live Activities for Courier Radar in iPhone Settings and test on a real iPhone."
+                                }
+                            }
+                        }
+                        Label("No automatic Uber monitoring or floating third-party overlay.",
                               systemImage:"hand.raised").font(.system(size:11))
                             .foregroundStyle(RadarStyle.amber)
                     }

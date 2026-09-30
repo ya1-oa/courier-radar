@@ -77,3 +77,5 @@ Apple background location: https://developer.apple.com/documentation/corelocatio
     open CourierRadar.xcodeproj
 
 Select your iPhone and Apple Personal Team, then run (Command-R). The generated AppIcon is resized to 1024 × 1024 by XcodeGen.
+
+Remote CI is intentionally skipped for this source-only update; run `swift test` and Xcode locally. The iPhone build has not yet been verified on your device.

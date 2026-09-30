@@ -33,19 +33,22 @@ export default async function handler(req,res){
       const repeat=prior?.[0]&&Math.abs(Number(prior[0].payout)-Number(row.payout))<.02&&Math.abs(Number(prior[0].miles)-Number(row.miles))<.16&&Math.abs(Number(prior[0].eta_minutes)-Number(row.eta_minutes))<=2&&String(prior[0].merchant||'').toLowerCase()===String(row.merchant||'').toLowerCase()&&(Date.now()-new Date(prior[0].captured_at).getTime())<180000;
       if(repeat){saved=[prior[0]];duplicate=true;}
       else{
-      // A newly observed offer while the previous order was already picked up is strong
-      // evidence that Uber considers that trip complete. Close it automatically so
-      // earnings never disappear just because the final Radar Next tap was missed.
+      // A new standalone offer after pickup is evidence of the next trip. Close the
+      // previous single order before opening the next; an add-on/stack must stay
+      // attached to its existing batch instead.
       const priorAgeMin=prior?.[0]?.captured_at?(Date.now()-new Date(prior[0].captured_at).getTime())/60000:0;
-      const incomingStack=parsed.isAddOn||parsed.stackCount>1;
-      // A later standalone offer is also strong completion evidence after an ARRIVED
-      // order has been active long enough. Never do this for Uber Delivery (N) stacks/add-ons.
-      if(prior?.[0]?.state==='picked_up' && priorAgeMin>=5 && Number(prior[0].stack_count||1)===1 && !incomingStack){
+      const incomingStack=Boolean(parsed.isAddOn||parsed.stackCount>1);
+      const completedPrevious=prior?.[0]?.state==='picked_up' && priorAgeMin>=5 &&
+        Number(prior[0].stack_count||1)===1 && !incomingStack;
+      if(completedPrevious){
         const completedAt=new Date().toISOString();
         await patch(`offers?id=eq.${prior[0].id}&driver_id=eq.${driverId}`,{state:'delivered',final_payout:prior[0].final_payout??prior[0].payout??null});
         await insert('offer_events',{offer_id:prior[0].id,driver_id:driverId,event:'inferred_delivery',captured_at:completedAt,lat:Number.isFinite(lat)?lat:null,lng:Number.isFinite(lng)?lng:null,zone,market_cell:marketCell});
         await insert('offer_events',{offer_id:prior[0].id,driver_id:driverId,event:'delivered',captured_at:completedAt,lat:Number.isFinite(lat)?lat:null,lng:Number.isFinite(lng)?lng:null,zone,market_cell:marketCell});
         if(prior[0].batch_id)await patch(`batches?id=eq.${prior[0].batch_id}&driver_id=eq.${driverId}`,{state:'completed',completed_at:completedAt,final_payout:prior[0].final_payout??prior[0].payout??null}).catch(()=>null);
+        // The newly captured offer is presumed accepted only for this explicit
+        // handoff; all other offers still begin observed and require acceptance.
+        row.state='accepted';
       }
       if(prior?.[0]?.state==='observed' && !parsed.isAddOn){
         await patch(`offers?id=eq.${prior[0].id}&driver_id=eq.${driverId}`,{state:'passed'});
@@ -64,7 +67,10 @@ export default async function handler(req,res){
       }
       row.batch_id=batchId;
       saved=await insert('offers',row);
-      if(saved?.[0]?.id)await insert('offer_events',{offer_id:saved[0].id,driver_id:driverId,event:'observed',captured_at:row.captured_at,lat:row.lat,lng:row.lng,zone:row.zone,market_cell:row.market_cell});
+      if(saved?.[0]?.id){
+        await insert('offer_events',{offer_id:saved[0].id,driver_id:driverId,event:'observed',captured_at:row.captured_at,lat:row.lat,lng:row.lng,zone:row.zone,market_cell:row.market_cell});
+        if(row.state==='accepted')await insert('offer_events',{offer_id:saved[0].id,driver_id:driverId,event:'accepted',captured_at:row.captured_at,lat:row.lat,lng:row.lng,zone:row.zone,market_cell:row.market_cell});
+      }
       }
     }catch(error){return res.status(500).json({error:error.message,parsed,rate})}
   }

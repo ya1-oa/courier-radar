@@ -90,3 +90,5 @@ Remote CI is intentionally skipped for this source-only update; run `swift test`
 - XcodeGen creates a second target, **RadarDecisionWidget**. Both **CourierRadar** and **RadarDecisionWidget** must use your Apple Personal Team; if you change the app's bundle identifier, give the widget a matching prefix and .decisionwidget suffix.
 - The implementation does not continuously monitor Uber or draw a movable window over it. It does not accept/decline orders automatically.
 - This source change needs a real-device Xcode build and Action Button test; a source push alone does not validate iOS signing or Dynamic Island presentation.
+
+The Dynamic Island source is committed without triggering CI because the repository's Actions credits are unavailable. Build and test the app plus widget on a physical iPhone using Xcode.

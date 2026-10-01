@@ -46,6 +46,14 @@ struct RadarMetric:View {
         }.frame(maxWidth:.infinity,alignment:.leading)
     }
 }
+private struct RadarPressStyle:ButtonStyle {
+    func makeBody(configuration:Configuration)->some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.965 : 1)
+            .opacity(configuration.isPressed ? 0.82 : 1)
+            .animation(.spring(response:0.18,dampingFraction:0.72),value:configuration.isPressed)
+    }
+}
 struct RadarActionButton:View {
     let title:String
     let systemImage:String
@@ -61,7 +69,8 @@ struct RadarActionButton:View {
                 .background(highlighted ? RadarStyle.signal:RadarStyle.inset,
                             in:RoundedRectangle(cornerRadius:13))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(RadarPressStyle())
+        .sensoryFeedback(.impact(weight:.light),trigger:disabled)
         .disabled(disabled)
         .opacity(disabled ? 0.5:1)
     }

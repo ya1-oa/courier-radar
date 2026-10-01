@@ -4,6 +4,8 @@ import RadarCore
 struct HistoryView:View {
     @EnvironmentObject private var store:RadarStore
     @State private var range=0
+    @State private var editingOffer:RadarOffer?
+    @State private var payoutText=""
     private var filtered:[RadarOffer] {
         let date=Date(),cut=Date().addingTimeInterval(-7*86400)
         let today=WorkClock.workday(at:date)
@@ -58,6 +60,31 @@ struct HistoryView:View {
         .scrollContentBackground(.hidden)
         .background(RadarStyle.background)
         .refreshable {await store.refresh()}
+        .sheet(item:$editingOffer) { offer in
+            NavigationStack {
+                Form {
+                    Section("Order") {
+                        Text(offer.merchant ?? "Uber delivery")
+                        TextField("Final payout",text:$payoutText)
+                            .keyboardType(.decimalPad)
+                    }
+                    Section {
+                        Text("This changes only this order's settled payout. Uber reconciliation remains a day-level checkpoint.")
+                            .font(.footnote).foregroundStyle(.secondary)
+                    }
+                }
+                .navigationTitle("Final payout")
+                .toolbar {
+                    ToolbarItem(placement:.cancellationAction){Button("Cancel"){editingOffer=nil}}
+                    ToolbarItem(placement:.confirmationAction){
+                        Button("Save"){
+                            guard let amount=Double(payoutText) else{return}
+                            Task{await store.updatePayout(offerId:offer.id,amount:amount);editingOffer=nil}
+                        }
+                    }
+                }
+            }.presentationDetents([.medium])
+        }
     }
     @ViewBuilder private func historyGroup(title:String,detail:String,offers:[RadarOffer]) -> some View {
         if !offers.isEmpty {
@@ -89,6 +116,14 @@ struct HistoryView:View {
                             Spacer()
                             Text(Money.dollars(offer.settledPayout))
                                 .font(.system(size:15,weight:.bold))
+                            Button {
+                                editingOffer=offer
+                                payoutText=String(format:"%.2f",offer.settledPayout)
+                            } label:{
+                                Image(systemName:"pencil.circle")
+                                    .font(.system(size:20))
+                                    .foregroundStyle(RadarStyle.subtle)
+                            }.buttonStyle(.plain)
                         }.padding(.vertical,12)
                     }
                 }

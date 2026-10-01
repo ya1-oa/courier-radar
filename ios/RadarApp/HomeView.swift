@@ -15,6 +15,7 @@ struct HomeView:View {
     @State private var confirmFinish=false
     @State private var waitExpanded=false
     @State private var showVoltageSheet=false
+    @State private var mapFocus=false
 
     private var zones:[DispatchZone] {
         (store.stats?.dispatchModel?.zones ?? []).filter {
@@ -35,6 +36,9 @@ struct HomeView:View {
                 UserAnnotation()
                 ForEach(zones) { z in
                     if let coord=z.point {
+                        MapCircle(center:CLLocationCoordinate2D(latitude:coord.lat,longitude:coord.lng),radius:520)
+                            .foregroundStyle((z.confidence>0.5 ? RadarStyle.signal : RadarStyle.amber).opacity(0.10 + min(0.14,z.confidence*0.14)))
+                            .stroke((z.confidence>0.5 ? RadarStyle.signal : RadarStyle.amber).opacity(0.45),lineWidth:1)
                         Annotation(z.zone,coordinate:CLLocationCoordinate2D(latitude:coord.lat,longitude:coord.lng)) {
                             Button{
                                 let span=MKCoordinateSpan(latitudeDelta:0.016,longitudeDelta:0.016)
@@ -60,12 +64,29 @@ struct HomeView:View {
                         }
                     }
                 }
+                if let drop=presentOffer?.dropoffPoint {
+                    Annotation("Predicted dropoff",coordinate:CLLocationCoordinate2D(latitude:drop.lat,longitude:drop.lng)) {
+                        VStack(spacing:3){
+                            Image(systemName:"flag.checkered.circle.fill").font(.system(size:22,weight:.bold))
+                            Text("PREDICTED").font(.system(size:8,weight:.bold))
+                        }
+                        .foregroundStyle(RadarStyle.amber)
+                        .padding(7).background(RadarStyle.background.opacity(0.92),in:RoundedRectangle(cornerRadius:10))
+                    }
+                }
             }
             .mapStyle(.standard(elevation:.flat))
             .mapControls {MapCompass();MapScaleView()}
             .ignoresSafeArea(edges:.top)
             VStack(spacing:11) {
                 HStack(spacing:9){
+                    if mapFocus {
+                        Button {withAnimation(.spring(response:0.3,dampingFraction:0.82)){mapFocus=false}} label:{
+                            Label("HUD",systemImage:"rectangle.stack.fill")
+                                .font(.system(size:11,weight:.bold)).padding(.horizontal,12).frame(height:48)
+                                .background(RadarStyle.surface,in:RoundedRectangle(cornerRadius:14))
+                        }.buttonStyle(.plain)
+                    } else {
                     RadarCard {
                         VStack(alignment:.leading,spacing:5){
                             HStack {
@@ -100,6 +121,7 @@ struct HomeView:View {
                         }
                     }
                     .frame(maxWidth:.infinity)
+                    }
                     Button {
                         if let point=store.gps.point {
                             camera = .region(MKCoordinateRegion(
@@ -123,12 +145,23 @@ struct HomeView:View {
                         .background(RadarStyle.surface,in:RoundedRectangle(cornerRadius:14))
                         .overlay(RoundedRectangle(cornerRadius:14).strokeBorder(RadarStyle.line))
                     }.buttonStyle(.plain)
+                    Button {withAnimation(.spring(response:0.3,dampingFraction:0.82)){mapFocus.toggle()}} label:{
+                        Image(systemName:mapFocus ? "rectangle.stack.fill":"map.fill")
+                            .font(.system(size:16,weight:.semibold)).frame(width:48,height:48)
+                            .background(RadarStyle.surface,in:RoundedRectangle(cornerRadius:14))
+                            .overlay(RoundedRectangle(cornerRadius:14).strokeBorder(RadarStyle.line))
+                    }.buttonStyle(.plain)
                 }
-                waitPanel
+                if !mapFocus { waitPanel }
                 Spacer(minLength:5)
                 if let offer=presentOffer {
-                    currentOfferPanel(offer)
+                    if mapFocus {
+                        compactOfferPanel(offer)
+                    } else {
+                        currentOfferPanel(offer)
+                    }
                 }
+                if !mapFocus {
                 HStack(spacing:9){
                     PhotosPicker(selection:$selectedScreenshot,matching:.images) {
                         Label("SCREENSHOT",systemImage:"text.viewfinder")
@@ -151,6 +184,8 @@ struct HomeView:View {
                                         in:RoundedRectangle(cornerRadius:13))
                     }.disabled(store.isActing)
                 }
+                }
+                if !mapFocus {
                 HStack(spacing:6){
                     Circle().fill(store.authReady ? RadarStyle.signal:RadarStyle.amber).frame(width:6,height:6)
                     Text(store.gps.status)
@@ -161,6 +196,7 @@ struct HomeView:View {
                 .font(.system(size:10))
                 .foregroundStyle(RadarStyle.subtle)
                 .lineLimit(1)
+                }
             }
             .padding(.horizontal,12).padding(.top,12).padding(.bottom,12)
         }
@@ -246,6 +282,23 @@ struct HomeView:View {
                         }
                     }.font(.system(size:11,weight:.bold)).foregroundStyle(RadarStyle.signal)
                 }
+            }
+        }
+    }
+    @ViewBuilder private func compactOfferPanel(_ offer:RadarOffer) -> some View {
+        RadarCard {
+            HStack(spacing:10) {
+                VStack(alignment:.leading,spacing:2) {
+                    RadarKicker(text:"Active")
+                    Text(offer.merchant ?? "Uber delivery").font(.system(size:13,weight:.bold)).lineLimit(1)
+                }
+                Spacer()
+                Text(Money.dollars(offer.payout)).font(.system(size:15,weight:.bold,design:.rounded))
+                RadarPill(text:offer.state ?? "ACTIVE",color:RadarStyle.signal)
+                Button {withAnimation(.spring(response:0.3,dampingFraction:0.82)){mapFocus=false}} label:{
+                    Image(systemName:"chevron.up").frame(width:34,height:34)
+                        .background(RadarStyle.inset,in:RoundedRectangle(cornerRadius:10))
+                }.buttonStyle(.plain)
             }
         }
     }

@@ -15,7 +15,8 @@ struct HomeView:View {
     @State private var confirmFinish=false
     @State private var waitExpanded=false
     @State private var showVoltageSheet=false
-    @State private var mapFocus=false
+    @State private var mapFocus=true
+    @State private var earningsExpanded=false
 
     private var zones:[DispatchZone] {
         (store.stats?.dispatchModel?.zones ?? []).filter {
@@ -109,18 +110,21 @@ struct HomeView:View {
                                         .font(.system(size:9)).foregroundStyle(RadarStyle.subtle)
                                 }
                             }
-                            ProgressView(value:min(1,store.verifiedCash/max(1,store.prefs.goal)))
-                                .tint(RadarStyle.signal)
-                            HStack {
-                                Text(store.stats?.todayEarningsSource=="uber_manual_total" ?
-                                     "UBER TOTAL (MANUAL)":"RADAR CAPTURED")
-                                Spacer()
-                                Text("Active \(Money.percent(store.paidUtilization))")
-                            }.font(.system(size:9,weight:.medium))
-                                .foregroundStyle(RadarStyle.subtle)
+                            if earningsExpanded {
+                                ProgressView(value:min(1,store.verifiedCash/max(1,store.prefs.goal)))
+                                    .tint(RadarStyle.signal)
+                                HStack {
+                                    Text(store.stats?.todayEarningsSource=="uber_manual_total" ? "UBER CHECKPOINT" :
+                                         store.stats?.todayEarningsSource=="uber_reconciled_live" ? "UBER CHECKPOINT + LIVE" : "RADAR CAPTURED")
+                                    Spacer()
+                                    Text("Active \(Money.percent(store.paidUtilization))")
+                                }.font(.system(size:9,weight:.medium))
+                                    .foregroundStyle(RadarStyle.subtle)
+                            }
                         }
                     }
                     .frame(maxWidth:.infinity)
+                    .onTapGesture {withAnimation(.easeInOut(duration:0.2)){earningsExpanded.toggle()}}
                     }
                     Button {
                         if let point=store.gps.point {

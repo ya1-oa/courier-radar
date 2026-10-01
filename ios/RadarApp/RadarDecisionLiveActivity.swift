@@ -22,7 +22,7 @@ import Foundation
             payout:String(payout.prefix(24)),
             reason:String(reason.prefix(190)),
             capturedAt:capturedAt,
-            expiresAt:expiresAt)
+            expiresAt:expiresAt,nextAction:nil,progress:nil)
         let content=ActivityContent(state:state,staleDate:expiresAt)
         do {
             let activities=Activity<RadarDecisionAttributes>.activities
@@ -43,20 +43,22 @@ import Foundation
         }
     }
 
-    static func updateStage(_ stage:String, merchant:String="Active delivery", payout:String="") async -> Bool {
+    static func updateStage(_ stage:String, merchant:String="Active delivery", payout:String="", stackCount:Int=1, dropoffs:Int=0) async -> Bool {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else{return false}
         let normalized=stage.replacingOccurrences(of:"_",with:" ").uppercased()
         if normalized == "DELIVERED" {
             for activity in Activity<RadarDecisionAttributes>.activities {
                 let now=Date()
-                let state=RadarDecisionAttributes.ContentState(verdict:"DELIVERED",merchant:merchant,payout:payout,reason:"Delivery complete",capturedAt:now,expiresAt:now.addingTimeInterval(20))
+                let state=RadarDecisionAttributes.ContentState(verdict:"DELIVERED",merchant:merchant,payout:payout,reason:"Delivery complete",capturedAt:now,expiresAt:now.addingTimeInterval(20),nextAction:nil,progress:stackCount>1 ? "\(stackCount)/\(stackCount) delivered" : nil)
                 await activity.update(ActivityContent(state:state,staleDate:now.addingTimeInterval(20)))
                 await activity.end(nil,dismissalPolicy:.after(now.addingTimeInterval(8)))
             }
             return true
         }
         let now=Date(), expires=now.addingTimeInterval(4*3600)
-        let state=RadarDecisionAttributes.ContentState(verdict:normalized,merchant:String(merchant.prefix(55)),payout:String(payout.prefix(24)),reason:"Live delivery status",capturedAt:now,expiresAt:expires)
+        let next:[String:String]=["ACCEPTED":"ARRIVED","ARRIVED":"PICKED UP","PICKED UP":stackCount>1 ? "DROPOFF \(min(stackCount,dropoffs+1))/\(stackCount)" : "DELIVERED"]
+        let progress=stackCount>1 ? "\(dropoffs)/\(stackCount) delivered" : nil
+        let state=RadarDecisionAttributes.ContentState(verdict:normalized,merchant:String(merchant.prefix(55)),payout:String(payout.prefix(24)),reason:"Live delivery status",capturedAt:now,expiresAt:expires,nextAction:next[normalized],progress:progress)
         let content=ActivityContent(state:state,staleDate:expires)
         do {
             if let first=Activity<RadarDecisionAttributes>.activities.first {

@@ -36,6 +36,9 @@ export default async function handler(req,res){
       await patch(`batches?id=eq.${offer.batch_id}&driver_id=eq.${driverId}`,batchPatch).catch(()=>null);
     }
     await insert('offer_events',{offer_id:offer.id,driver_id:driverId,event:state,captured_at:capturedAt,lat:Number.isFinite(lat)?lat:null,lng:Number.isFinite(lng)?lng:null,zone,market_cell:marketCell});
-    return res.status(200).json({ok:true,id:offer.id,previousState:offer.state,state:state==='dropoff'?'picked_up':state,event:state,label:state==='dropoff'?`DROPOFF ${((await select(`offer_events?offer_id=eq.${offer.id}&event=eq.dropoff&select=id`).catch(()=>[])).length)} / ${offer.stack_count}`:state.replace('_',' ').toUpperCase(),capturedAt,batchId:offer.batch_id||null,offerKind:offer.offer_kind||'single',stackCount:offer.stack_count||1,locationRecorded:Boolean(Number.isFinite(lat)&&Number.isFinite(lng)),zone,marketCell,updated});
+    const dropoffCount=state==='dropoff'?((await select(`offer_events?offer_id=eq.${offer.id}&event=eq.dropoff&select=id`).catch(()=>[])).length):(state==='delivered'?Number(offer.stack_count||1):0);
+    const publicState=state==='dropoff'?'picked_up':state;
+    const nextAction=publicState==='accepted'?'ARRIVED':publicState==='arrived'?'PICKED UP':publicState==='picked_up'?(Number(offer.stack_count||1)>1?`DROPOFF ${Math.min(Number(offer.stack_count||1),dropoffCount+1)}/${offer.stack_count}`:'DELIVERED'):null;
+    return res.status(200).json({ok:true,id:offer.id,previousState:offer.state,state:publicState,event:state,label:state==='dropoff'?`DROPOFF ${dropoffCount} / ${offer.stack_count}`:state.replace('_',' ').toUpperCase(),capturedAt,batchId:offer.batch_id||null,offerKind:offer.offer_kind||'single',stackCount:offer.stack_count||1,dropoffCount,nextAction,locationRecorded:Boolean(Number.isFinite(lat)&&Number.isFinite(lng)),zone,marketCell,updated});
   }catch(error){return res.status(500).json({error:error.message})}
 }

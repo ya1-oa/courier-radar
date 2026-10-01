@@ -23,11 +23,12 @@ struct HomeView:View {
             $0.block==WorkClock.block(at:Date()) && $0.point != nil && $0.availableMinutes>0
         }
     }
-    private var presentOffer:RadarOffer? {
-        if let offer=store.latestOffer,offer.state=="observed",
-           let at=offer.capturedAt,Date().timeIntervalSince(at)<180 {return offer}
-        return store.activeOffer
+    private var pendingOffer:RadarOffer? {
+        guard let offer=store.latestOffer,offer.state=="observed",
+              let at=offer.capturedAt,Date().timeIntervalSince(at)<180 else{return nil}
+        return offer
     }
+    private var presentOffer:RadarOffer? { pendingOffer ?? store.activeOffer }
     private var currentDecision:CashDecision? {
         presentOffer.map{store.decide($0)}
     }
@@ -289,12 +290,25 @@ struct HomeView:View {
             }
         }
     }
+    private func nextLabel(_ offer:RadarOffer)->String {
+        switch offer.state ?? "" {
+        case "accepted": return "ARRIVED"
+        case "arrived": return "PICKED UP"
+        case "picked_up": return (offer.stackCount ?? 1)>1 ? "NEXT DROPOFF" : "DELIVERED"
+        default: return "NEXT"
+        }
+    }
     @ViewBuilder private func compactOfferPanel(_ offer:RadarOffer) -> some View {
         RadarCard {
             HStack(spacing:10) {
                 VStack(alignment:.leading,spacing:2) {
-                    RadarKicker(text:"Active")
+                    RadarKicker(text:offer.state=="observed" ? "Offer" : "Active")
                     Text(offer.merchant ?? "Uber delivery").font(.system(size:13,weight:.bold)).lineLimit(1)
+                    if offer.state != "observed" {
+                        let count=max(1,offer.stackCount ?? 1)
+                        Text(count>1 ? "\(count) orders · Next Radar → "+nextLabel(offer) : "Next Radar → "+nextLabel(offer))
+                            .font(.system(size:9,weight:.bold)).foregroundStyle(RadarStyle.subtle)
+                    }
                 }
                 Spacer()
                 Text(Money.dollars(offer.payout)).font(.system(size:15,weight:.bold,design:.rounded))

@@ -40,7 +40,7 @@ export default async function handler(req,res){
       const activeDelivery=inProgress?.[0]||null;
       if(prior?.[0]?.state==='observed' && !parsed.isAddOn){
         await patch(`offers?id=eq.${prior[0].id}&driver_id=eq.${driverId}`,{state:'passed'});
-        await insert('offer_events',{offer_id:prior[0].id,driver_id:driverId,event:'expired',captured_at:new Date().toISOString(),lat:Number.isFinite(lat)?lat:null,lng:Number.isFinite(lng)?lng:null,zone,market_cell:marketCell});
+        await insert('offer_events',{offer_id:prior[0].id,driver_id:driverId,event:'passed',captured_at:new Date().toISOString(),lat:Number.isFinite(lat)?lat:null,lng:Number.isFinite(lng)?lng:null,zone,market_cell:marketCell});
       }
       let batchId=null;
       if(parsed.isAddOn && prior?.[0]?.batch_id && !['delivered','completed','passed','rejected'].includes(prior[0].state)) batchId=prior[0].batch_id;

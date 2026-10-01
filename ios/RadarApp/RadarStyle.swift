@@ -70,7 +70,6 @@ struct RadarActionButton:View {
                             in:RoundedRectangle(cornerRadius:13))
         }
         .buttonStyle(RadarPressStyle())
-        .sensoryFeedback(.impact(weight:.light),trigger:disabled)
         .disabled(disabled)
         .opacity(disabled ? 0.5:1)
     }

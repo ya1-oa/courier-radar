@@ -186,7 +186,14 @@ enum RadarTab:Hashable {case live,history,stats,settings}
             }
             let result:ActionPayload=try await api.post("/api/action",json:body)
             captureState=result.label ?? "Recorded \(result.state ?? state)"
-            await RadarDecisionLiveActivity.clear()
+            let lifecycle=result.state ?? state
+            _ = await RadarDecisionLiveActivity.updateStage(lifecycle,
+                merchant:activeOffer?.merchant ?? latestOffer?.merchant ?? "Active delivery",
+                payout:Money.dollars(activeOffer?.payout ?? latestOffer?.payout))
+            if ["delivered","completed","passed","rejected","cancelled"].contains(lifecycle) {
+                offers.removeAll { $0.id == activeOffer?.id || (lifecycle != "delivered" && $0.id == latestOffer?.id) }
+                updateDecisions()
+            }
             await refresh()
         }catch{self.error=error.localizedDescription}
     }

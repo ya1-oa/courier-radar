@@ -6,7 +6,7 @@ private enum DecisionVisual {
     static func color(_ verdict:String,stale:Bool)->Color {
         if stale{return .gray}
         switch verdict {
-        case "TAKE":return .green
+        case "TAKE","ACCEPTED","ARRIVED","PICKED UP","DELIVERED":return .green
         case "SKIP":return .orange
         default:return .yellow
         }
@@ -84,7 +84,8 @@ struct RadarDecisionWidget:Widget {
             } minimal: {
                 Image(systemName:context.isStale ? "clock" :
                     context.state.verdict=="TAKE" ? "checkmark" :
-                    context.state.verdict=="SKIP" ? "xmark" : "questionmark")
+                    context.state.verdict=="SKIP" ? "xmark" :
+                    ["ACCEPTED","ARRIVED","PICKED UP","DELIVERED"].contains(context.state.verdict) ? "location.fill" : "questionmark")
                     .foregroundStyle(DecisionVisual.color(context.state.verdict,stale:context.isStale))
             }
             .keylineTint(DecisionVisual.color(context.state.verdict,stale:context.isStale))

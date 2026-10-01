@@ -258,6 +258,16 @@ enum RadarTab:Hashable {case live,history,stats,settings}
         if shiftActive && prefs.voltageRemindersEnabled {await RadarVoltageReminder.schedule()}
         if authReady {await syncPolicy()}
     }
+    func updatePayout(offerId:String, amount:Double) async {
+        guard amount>=0,amount<=1000 else{error="Enter a valid final payout.";return}
+        do {
+            let api=try endpoint()
+            let _:EarningPayload=try await api.post("/api/earnings",json:["offerId":offerId,"finalPayout":amount])
+            if let index=offers.firstIndex(where:{$0.id==offerId}) { offers[index].finalPayout=amount }
+            await refresh()
+            status="Order payout updated"
+        }catch{self.error=error.localizedDescription}
+    }
     func syncUberTotal(_ amount:Double) async {
         guard amount>=0,amount<=5000 else{error="Enter Uber's displayed daily total.";return}
         do {

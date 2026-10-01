@@ -11,6 +11,8 @@ struct RadarDecisionAttributes:ActivityAttributes {
         var reason:String
         var capturedAt:Date
         var expiresAt:Date
+        var nextAction:String?
+        var progress:String?
     }
     var label:String
 }

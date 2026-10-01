@@ -327,6 +327,20 @@ struct HomeView:View {
                             .font(.system(size:10,weight:.bold))
                             .foregroundStyle(RadarStyle.signal)
                     }
+                    if let drop=offer.dropoffPoint {
+                        let target=zones.max(by:{($0.rate*$0.payout)<($1.rate*$1.payout)})
+                        HStack(spacing:8) {
+                            Label(offer.dropoffZone ?? MarketZone.identify(drop) ?? "Predicted dropoff",systemImage:"flag.checkered")
+                            if let point=target?.point {
+                                let miles=drop.miles(to:point)
+                                let minutes=Int(ceil(miles/max(3,store.prefs.speedMPH)*60))
+                                Text("RETURN → \(target?.zone ?? "best zone") ~\(minutes)m")
+                            }
+                        }
+                        .font(.system(size:9,weight:.bold))
+                        .foregroundStyle(RadarStyle.amber)
+                        .lineLimit(1).minimumScaleFactor(0.72)
+                    }
                     HStack(spacing:12){
                         Label("\(Money.number(offer.miles)) mi",systemImage:"point.topleft.down.curvedto.point.bottomright.up")
                         Label("\(Int(offer.tripETA)) min",systemImage:"clock")

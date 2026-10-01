@@ -26,9 +26,15 @@ export default async function handler(req,res){
   for(const o of completed)dayRow(laDate(o.captured_at)).captured+=Number(o.final_payout??o.payout??0);
   for(const e of earnings||[]){const day=dayRow(laDate(e.occurred_at));if(e.source==='uber_daily_total'){if(!day.snapshot||new Date(e.occurred_at)>new Date(day.snapshot.occurred_at))day.snapshot=e}else day.csv+=Number(e.amount||0)}
   const todayRow=dayRow(todayKey),todayImported=todayRow.csv,todaySnapshot=todayRow.snapshot,imported=[...dayRows.values()].reduce((s,d)=>s+d.csv,0);
-  const todayEarnings=todaySnapshot?Number(todaySnapshot.amount):todayImported||todayOfferPayout;
+  const snapshotAt=todaySnapshot?new Date(todaySnapshot.occurred_at).getTime():null;
+  const afterSnapshot=snapshotAt?todayCompleted.filter(o=>{
+    const ev=byOffer.get(o.id)||[];
+    const done=[...ev].reverse().find(e=>['delivered','completed'].includes(e.event));
+    return new Date(done?.captured_at||o.captured_at).getTime()>snapshotAt;
+  }).reduce((sum,o)=>sum+Number(o.final_payout??o.payout??0),0):0;
+  const todayEarnings=todaySnapshot?Number(todaySnapshot.amount)+afterSnapshot:todayImported||todayOfferPayout;
   const totalEarnings=[...dayRows.values()].reduce((s,d)=>s+(d.snapshot?Number(d.snapshot.amount):d.csv||d.captured),0);
-  const todayEarningsSource=todaySnapshot?'uber_manual_total':todayImported?'uber_csv':'radar_captured';
+  const todayEarningsSource=todaySnapshot?(afterSnapshot>0?'uber_reconciled_live':'uber_manual_total'):todayImported?'uber_csv':'radar_captured';
   const blockName=d=>{const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/Los_Angeles',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(d));const h=Number(parts.find(p=>p.type==='hour')?.value||0)+Number(parts.find(p=>p.type==='minute')?.value||0)/60;if(h>=6&&h<10.5)return'BREAKFAST';if(h>=10.5&&h<14.5)return'LUNCH';if(h>=14.5&&h<16.5)return'AFTERNOON';if(h>=16.5&&h<21)return'DINNER';if(h>=21||h<1)return'LATE';return'OFF-PEAK'};
   const currentBlock=blockName(new Date()),blockCompleted=todayCompleted.filter(o=>blockName(o.captured_at)===currentBlock),blockEarnings=blockCompleted.reduce((sum,o)=>sum+Number(o.final_payout??o.payout??0),0),todayOrders=todayCompleted.length;
   const active=(shifts||[]).find(s=>!s.ended_at)||null;

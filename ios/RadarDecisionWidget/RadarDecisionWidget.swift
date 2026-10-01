@@ -34,6 +34,8 @@ struct RadarDecisionWidget:Widget {
                 }
                 Text(context.isStale ? "Offer snapshot expired. Capture a new screenshot." : context.state.reason)
                     .font(.caption).lineLimit(2)
+                if let progress=context.state.progress { Text(progress).font(.caption.bold()) }
+                if let next=context.state.nextAction { Text("Next Radar → "+next).font(.caption.bold()).foregroundStyle(.green) }
                 HStack {
                     Text("Check the live Uber offer before acting")
                     Spacer(minLength:5)
@@ -63,6 +65,8 @@ struct RadarDecisionWidget:Widget {
                     VStack(alignment:.leading,spacing:5) {
                         Text(context.isStale ? "Offer snapshot expired." : context.state.reason)
                             .font(.caption).lineLimit(3)
+                        if let progress=context.state.progress { Text(progress).font(.caption.bold()) }
+                        if let next=context.state.nextAction { Text("Next Radar → "+next).font(.caption.bold()).foregroundStyle(.green) }
                         HStack {
                             Text("Check Uber before acting")
                             Spacer()

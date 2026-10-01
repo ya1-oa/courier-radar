@@ -73,6 +73,9 @@ struct RadarCaptureIntent:LiveActivityIntent {
 
 struct RadarAppShortcuts:AppShortcutsProvider {
     static var appShortcuts:[AppShortcut] {
+        AppShortcut(intent:RadarNextIntent(),
+            phrases:["Advance Radar with \(.applicationName)"],
+            shortTitle:"Radar Next",systemImageName:"forward.fill")
         AppShortcut(intent:RadarImageCaptureIntent(),
             phrases:["Analyze an Uber screenshot with \(.applicationName)"],
             shortTitle:"Analyze Uber Screenshot",systemImageName:"camera.viewfinder")

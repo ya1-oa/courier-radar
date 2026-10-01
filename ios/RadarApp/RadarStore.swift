@@ -191,7 +191,8 @@ enum RadarTab:Hashable {case live,history,stats,settings}
                 merchant:activeOffer?.merchant ?? latestOffer?.merchant ?? "Active delivery",
                 payout:Money.dollars(activeOffer?.payout ?? latestOffer?.payout))
             if ["delivered","completed","passed","rejected","cancelled"].contains(lifecycle) {
-                offers.removeAll { $0.id == activeOffer?.id || (lifecycle != "delivered" && $0.id == latestOffer?.id) }
+                let terminalId = activeOffer?.id ?? latestOffer?.id
+                if let terminalId { offers.removeAll { $0.id == terminalId } }
                 updateDecisions()
             }
             await refresh()

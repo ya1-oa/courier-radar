@@ -350,11 +350,12 @@ struct HomeView:View {
                     }.buttonStyle(.plain)
                 }
                 if activeOfferExpanded {
-                    HStack {
-                        RadarActionButton(title:"DECLINED",systemImage:"xmark",disabled:store.isActing){
+                    if offer.state=="observed" {
+                        RadarActionButton(title:"DECLINE OFFER",systemImage:"xmark",disabled:store.isActing){
                             Task{await store.mark("rejected")}
                         }
-                        RadarActionButton(title:"CANCELLED",systemImage:"xmark.circle",disabled:store.isActing){
+                    } else {
+                        RadarActionButton(title:"CANCEL DELIVERY",systemImage:"xmark.circle",disabled:store.isActing){
                             Task{await store.mark("cancelled")}
                         }
                     }

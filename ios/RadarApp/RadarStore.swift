@@ -24,6 +24,10 @@ enum RadarTab:Hashable {case live,history,stats,settings}
     @Published var lastServerVerdict:String?
     @Published var lastPredictionDisagreement=false
     @Published var pendingGPS=0
+    @Published var aiAdvice:CoachAdvice?
+    @Published var aiStatus="OpenAI off"
+    @Published var availableSince:Date?
+    @Published var marketSignals:[MarketSignal]=MarketSignalCache.load()
 
     let prefs=LocalPreferences()
     let gps=LocationTracker()
@@ -31,6 +35,14 @@ enum RadarTab:Hashable {case live,history,stats,settings}
     private var pingQueue:[LocationPing]=[]
     private var flushing=false
     private var lastDecisionLocationAt:Date = .distantPast
+    private var availableZone:String?
+    private var coachTask:Task<Void,Never>?
+    private var aiReviewedOffer:String?
+    private var lastCoachRequestAt:Date = .distantPast
+    private var aiOfferID:String?
+    private var aiExpiresAt:Date = .distantPast
+    private var marketTask:Task<Void,Never>?
+    private var lastMarketRequestAt:Date = .distantPast
     private let queueKey="RadarPendingGPSSamplesV1"
 
     init(){
@@ -82,16 +94,49 @@ enum RadarTab:Hashable {case live,history,stats,settings}
     }
     func engine() -> CashPlanner {
         CashPlanner(snapshot:stats?.dispatchModel ?? DispatchSnapshot(),
-                    history:offers,policy:policyNow())
+                    history:offers,policy:policyNow(),adaptiveContext:adaptiveContext())
+    }
+    func adaptiveContext() -> AdaptiveContext {
+        let now=Date(),start=availableSince ?? now
+        let baseline=max(start,stats?.dispatchModel?.trainedAt ?? start)
+        let extraOffers=offers.filter{($0.capturedAt ?? .distantPast)>baseline}.count
+        let skips=offers.prefix(while:{$0.state=="rejected"}).count
+        return AdaptiveContext(idleMinutes:max(0,now.timeIntervalSince(start)/60),
+            additionalAvailableMinutes:max(0,now.timeIntervalSince(baseline)/60),additionalOffers:extraOffers,
+            acceptancePercent:prefs.acceptancePercent,
+            workingMinutesLeft:min(Double(WorkClock.minutesUntilStop(now:now,clock:prefs.stopTime)),
+                max(1,prefs.plannedWorkHours*60-(stats?.todayOnlineMinutes ?? 0))),
+            earned:verifiedCash,consecutiveSkips:skips,marketSignals:marketSignals)
+    }
+    func cycleEvaluation(_ offer:RadarOffer)->CycleEvaluation {
+        AdaptivePlanner(snapshot:stats?.dispatchModel ?? DispatchSnapshot(),history:offers,
+            policy:policyNow(),context:adaptiveContext()).evaluate(offer,position:gps.point)
     }
     func decide(_ offer:RadarOffer) -> CashDecision {
-        recommendations[offer.id] ?? engine().offerDecision(offer,position:gps.point)
+        if let at=offer.capturedAt,offer.state=="observed",Date().timeIntervalSince(at)>45 {
+            return CashDecision(kind:.check,reason:"Offer expired. Capture the current Uber screen.")
+        }
+        var decision=engine().offerDecision(offer,position:gps.point)
+        if prefs.aiEnabled,offer.state=="observed",aiOfferID==offer.id,aiExpiresAt>Date(),let aiAdvice,
+           decision.kind != .check,aiAdvice.confidence>=0.7 {
+            if aiAdvice.action=="CHECK" || (decision.kind == .take && aiAdvice.action=="SKIP") {
+                decision.kind = .check
+                decision.reason="AI review: "+aiAdvice.reason+" Native math: "+decision.reason
+            }
+        }
+        return decision
     }
     var waitAdvice:CashDecision {
         recommendations["wait"] ?? CashDecision(kind:.wait,
             reason:"Waiting for location and offer history before evaluating a move.")
     }
     private func updateDecisions() {
+        let zone=MarketZone.identify(gps.point)
+        if available {
+            if availableSince==nil || availableZone != zone {availableSince=Date();availableZone=zone}
+        }else{availableSince=nil;availableZone=nil}
+        if let availableSince{UserDefaults.standard.set(availableSince,forKey:"RadarAvailableSince")}
+        else{UserDefaults.standard.removeObject(forKey:"RadarAvailableSince")}
         let planner=engine()
         var result:[String:CashDecision]=[:]
         var wait=planner.waitDecision(position:gps.point,active:activeOffer != nil)
@@ -114,6 +159,24 @@ enum RadarTab:Hashable {case live,history,stats,settings}
     private func endpoint() throws -> RadarEndpoint {
         try RadarEndpoint(server:prefs.server,token:RadarKeychain.load())
     }
+    private func refreshMarketSignalsIfNeeded() {
+        guard shiftActive,Date().timeIntervalSince(lastMarketRequestAt)>900,
+              let point=gps.point,point.isValid,let api=try? endpoint() else{return}
+        lastMarketRequestAt=Date();marketTask?.cancel()
+        marketTask=Task{[weak self] in
+            guard let self else{return}
+            do {
+                let plan:StartPlanPayload=try await api.get("/api/start-plan?lat=\(point.lat)&lng=\(point.lng)&radius=6000")
+                guard !Task.isCancelled,self.gps.point.map({$0.miles(to:point)<1}) ?? false else{return}
+                let rows=plan.candidates.prefix(12).map{c in
+                    MarketSignal(point:.init(lat:c.lat,lng:c.lng),nearbyVenues:c.nearbyRestaurantCount ?? 0,
+                        observedUberMerchants:c.uberObservedRestaurantCount ?? 0,
+                        footTrafficIndex:c.externalBusyness,capturedAt:Date())
+                }
+                self.marketSignals=rows;MarketSignalCache.save(rows);self.updateDecisions()
+            }catch{/* Keep current math; discovery is not in the expiring-offer path. */}
+        }
+    }
     func start() {
         if refreshTask != nil{return}
         UNUserNotificationCenter.current().requestAuthorization(options:[.alert,.badge,.sound]){_,_ in}
@@ -126,7 +189,7 @@ enum RadarTab:Hashable {case live,history,stats,settings}
         }
         Task{await self.refresh()}
     }
-    func stop(){refreshTask?.cancel();refreshTask=nil;gps.stop()}
+    func stop(){refreshTask?.cancel();refreshTask=nil;coachTask?.cancel();marketTask?.cancel();gps.stop()}
     func refresh() async {
         guard authReady,!isRefreshing else{return}
         isRefreshing=true
@@ -142,6 +205,7 @@ enum RadarTab:Hashable {case live,history,stats,settings}
             if shiftActive && !gps.recording {gps.start(vehicle:prefs.vehicle)}
             if !shiftActive && gps.recording {gps.stop()}
             updateDecisions()
+            refreshMarketSignalsIfNeeded()
             error=nil;status="Synced";lastSync=Date()
             await flushGPS()
         } catch {
@@ -209,17 +273,17 @@ enum RadarTab:Hashable {case live,history,stats,settings}
             guard !ocr.text.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty else{
                 throw NSError(domain:"RadarOCR",code:2,userInfo:[NSLocalizedDescriptionKey:"No readable Uber text in screenshot"])
             }
-            try await sendCapture(text:ocr.text)
+            try await sendCapture(text:ocr.text,image:image)
         }catch{captureState="Capture failed";self.error=error.localizedDescription}
     }
-    func sendCapture(text:String) async throws {
+    func sendCapture(text:String,image:UIImage?=nil) async throws {
         let capturedAt=Date()
         let api=try endpoint()
         var body:[String:Any]=[
             "text":text,"source":"ios_native_vision","vehicle":prefs.vehicle,
             "remainingMinutes":WorkClock.minutesUntilStop(now:Date(),clock:prefs.stopTime),
             "calibrationDay":prefs.activeCalibrationDay,"stopTime":prefs.stopTime,
-            "dailyEarned":verifiedCash
+            "dailyEarned":verifiedCash,"dailyTarget":prefs.goal
         ]
         if let b=inferredBatteryMiles{body["batteryMiles"]=b}
         if let fix=gps.point,fix.isValid{body["lat"]=fix.lat;body["lng"]=fix.lng}
@@ -232,21 +296,67 @@ enum RadarTab:Hashable {case live,history,stats,settings}
                 ? "Uber screen → \(result.state ?? "stage recorded")."
                 : "State not advanced: \(result.reason ?? "verify manually")"
         } else {
-            if result.screen?.kind=="offer" || result.verdict != nil {
-                _ = await RadarDecisionLiveActivity.show(
-                    verdict:result.verdict ?? "CHECK",
-                    merchant:result.parsed?.merchant ?? "Uber offer",
-                    payout:Money.dollars(result.parsed?.payout),
-                    reason:result.decision?.reason ?? result.reason ?? "Check Uber before acting.",
-                    capturedAt:capturedAt)
-            }
             captureState=(result.duplicate == true ? "Repeated screenshot · " : "")
-                + (result.verdict ?? "CHECK")+" · "+(result.parsed?.merchant ?? "Uber offer")
+                + "Evaluating native cycle · "+(result.parsed?.merchant ?? "Uber offer")
         }
         await refresh()
-        if let offer=latestOffer,result.screen?.kind=="offer" {
+        if let offer=offers.first(where:{$0.id==result.id}),result.screen?.kind=="offer" {
             let native=decide(offer)
             lastPredictionDisagreement=native.kind.rawValue != result.verdict
+            captureState=native.kind.rawValue+" · "+(offer.merchant ?? "Uber offer")
+            _ = await RadarDecisionLiveActivity.show(verdict:native.kind.rawValue,
+                merchant:offer.merchant ?? "Uber offer",payout:Money.dollars(offer.payout),
+                reason:native.reason,capturedAt:capturedAt)
+            queueCoachReview(offer:offer,text:text,image:image,capturedAt:capturedAt)
+        }
+    }
+    private func queueCoachReview(offer:RadarOffer,text:String,image:UIImage?,capturedAt:Date) {
+        guard prefs.aiEnabled else{aiStatus="OpenAI off";return}
+        guard Date().timeIntervalSince(offer.capturedAt ?? .distantPast)<45 else{return}
+        guard aiReviewedOffer != offer.id,Date().timeIntervalSince(lastCoachRequestAt)>=15 else{return}
+        let day=WorkClock.workday(at:Date()),key="RadarCoachCount_"+day
+        let count=UserDefaults.standard.integer(forKey:key)
+        guard count<100 else{aiStatus="100 AI reviews used today · native math active";return}
+        let evaluation=cycleEvaluation(offer)
+        guard let mathData=try? JSONEncoder().encode(evaluation),
+              let math=try? JSONSerialization.jsonObject(with:mathData),
+              let api=try? endpoint() else{return}
+        var state:[String:Any]=["algorithm":math,"ocrText":String(text.prefix(6000)),
+            "idleMinutes":adaptiveContext().idleMinutes,"earned":verifiedCash,"dailyGoal":prefs.goal,
+            "clusters":HuntCluster.culver.map{["name":$0.name,"merchants":$0.merchants.joined(separator:", ")]}]
+        state["marketSignals"]=marketSignals.prefix(4).map{s in
+            ["lat":s.point.lat,"lng":s.point.lng,"nearbyVenues":Double(s.nearbyVenues),
+             "observedUberMerchants":Double(s.observedUberMerchants),"footTrafficIndex":s.footTrafficIndex ?? -1]
+        }
+        if let point=gps.point {state["position"]=["lat":point.lat,"lng":point.lng]}
+        if let range=inferredBatteryMiles{state["batteryMiles"]=range}
+        if let ar=prefs.acceptancePercent{state["acceptancePercent"]=ar}
+        var body:[String:Any]=["offerId":offer.id,"capturedAt":ISO8601DateFormatter().string(from:capturedAt),"state":state]
+        if let image {
+            let scale=min(1,768/max(image.size.width,image.size.height))
+            let size=CGSize(width:max(1,image.size.width*scale),height:max(1,image.size.height*scale))
+            let resized=UIGraphicsImageRenderer(size:size).image{_ in image.draw(in:CGRect(origin:.zero,size:size))}
+            if let data=resized.jpegData(compressionQuality:0.6),data.count<800_000 {
+                body["screenshotBase64"]=data.base64EncodedString()
+            }
+        }
+        coachTask?.cancel();aiReviewedOffer=offer.id;lastCoachRequestAt=Date()
+        aiAdvice=nil;aiStatus="OpenAI reviewing…"
+        UserDefaults.standard.set(count+1,forKey:key)
+        coachTask=Task{[weak self] in
+            guard let self else{return}
+            do {
+                let result:CoachPayload=try await api.post("/api/coach",json:body)
+                guard !Task.isCancelled,result.offerId==self.latestOffer?.id,result.expiresAt>Date(),
+                      self.latestOffer?.state=="observed" else{return}
+                self.aiAdvice=result.advice;self.aiOfferID=offer.id;self.aiExpiresAt=result.expiresAt
+                self.aiStatus="OpenAI reviewed · "+result.advice.action
+                self.updateDecisions()
+                let final=self.decide(offer)
+                _ = await RadarDecisionLiveActivity.show(verdict:final.kind.rawValue,
+                    merchant:offer.merchant ?? "Uber offer",payout:Money.dollars(offer.payout),
+                    reason:final.reason,capturedAt:capturedAt)
+            }catch{self.aiStatus="AI unavailable · native math active"}
         }
     }
     func recordVoltage(_ volts:Double,tripMiles:Double?=nil) async {

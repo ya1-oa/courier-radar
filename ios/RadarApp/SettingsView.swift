@@ -47,6 +47,20 @@ struct SettingsView:View {
                 RadarCard{
                     VStack(alignment:.leading,spacing:12){
                         Text("Daily cash policy").font(.system(size:17,weight:.bold))
+                        Stepper("Planned working hours: \(String(format:"%.1f",prefs.plannedWorkHours))",
+                            value:$prefs.plannedWorkHours,in:2...13,step:0.5)
+                            .font(.system(size:12))
+                        Toggle("OpenAI screenshot review",isOn:$prefs.aiEnabled)
+                            .font(.system(size:13))
+                        Text("When enabled, screenshot and native math go to your Radar server for OpenAI review. Set OPENAI_API_KEY on the server. Up to 100 requests/day on this device; native math keeps running if AI is unavailable.")
+                            .font(.system(size:11)).foregroundStyle(RadarStyle.subtle)
+                        HStack {
+                            Text("Current acceptance %").font(.system(size:12))
+                            TextField("From Uber",value:$prefs.acceptancePercent,format:.number)
+                                .keyboardType(.decimalPad).radarInput().frame(width:90)
+                        }
+                        Text("Target 60% · review at 56% · floor 50%. Enter the current Uber percentage; exact rolling skip budget is not inferred.")
+                            .font(.system(size:11)).foregroundStyle(RadarStyle.subtle)
                         HStack{
                             VStack(alignment:.leading,spacing:3){
                                 RadarKicker(text:"Daily goal")
@@ -313,3 +327,4 @@ enum UberCSV {
         }
     }
 }
+

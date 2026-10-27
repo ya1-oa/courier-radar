@@ -17,6 +17,9 @@ import RadarCore
     @Published var batteryUpdatedAt:Date? {didSet{save()}}
     @Published var speedMPH:Double {didSet{save()}}
     @Published var vehicle:String {didSet{save()}}
+    @Published var aiEnabled:Bool {didSet{save()}}
+    @Published var acceptancePercent:Double? {didSet{save()}}
+    @Published var plannedWorkHours:Double {didSet{save()}}
     private let key="RadarNativePreferencesV1"
     private struct Saved:Codable {
         var server:String
@@ -34,12 +37,15 @@ import RadarCore
         var batteryVoltageAt:Date?
         var voltageReadings:[RadarVoltageReading]?
         var voltageRemindersEnabled:Bool?
+        var aiEnabled:Bool?
+        var acceptancePercent:Double?
+        var plannedWorkHours:Double?
     }
     init(){
         let saved=UserDefaults.standard.data(forKey:"RadarNativePreferencesV1")
             .flatMap{try? JSONDecoder().decode(Saved.self,from:$0)}
         server=saved?.server ?? "https://delivery-intelligence-ten.vercel.app"
-        goal=saved?.goal ?? 200
+        goal=saved?.goal ?? 270
         calibrationDay=saved?.calibrationDay ?? "2026-09-29"
         calibrationEnabled=saved?.calibrationEnabled ?? false
         stopTime=saved?.stopTime ?? "01:00"
@@ -51,8 +57,11 @@ import RadarCore
         voltageReadings=saved?.voltageReadings ?? []
         voltageRemindersEnabled=saved?.voltageRemindersEnabled ?? false
         batteryUpdatedAt=saved?.batteryUpdatedAt
-        speedMPH=saved?.speedMPH ?? 11
+        speedMPH=saved?.speedMPH ?? 12
         vehicle=saved?.vehicle ?? "ebike"
+        aiEnabled=saved?.aiEnabled ?? false
+        acceptancePercent=saved?.acceptancePercent
+        plannedWorkHours=saved?.plannedWorkHours ?? 10
     }
     private func save(){
         let snapshot=Saved(server:server,goal:goal,calibrationDay:calibrationDay,
@@ -60,7 +69,8 @@ import RadarCore
                   speedMPH:speedMPH,vehicle:vehicle,calibrationEnabled:calibrationEnabled,
                   batteryNominalVolts:batteryNominalVolts,fullChargeMiles:fullChargeMiles,
                   batteryVoltage:batteryVoltage,batteryVoltageAt:batteryVoltageAt,
-                  voltageReadings:voltageReadings,voltageRemindersEnabled:voltageRemindersEnabled)
+                  voltageReadings:voltageReadings,voltageRemindersEnabled:voltageRemindersEnabled,
+                  aiEnabled:aiEnabled,acceptancePercent:acceptancePercent,plannedWorkHours:plannedWorkHours)
         if let json=try? JSONEncoder().encode(snapshot){UserDefaults.standard.set(json,forKey:key)}
     }
     var activeCalibrationDay:String {calibrationEnabled ? calibrationDay : "1900-01-01"}
@@ -92,3 +102,4 @@ import RadarCore
         batteryMiles=miles
     }
 }
+

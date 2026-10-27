@@ -91,6 +91,12 @@ struct LatestCapture:Decodable {
     var miles:Double?
     var etaMinutes:Double?
     var confidence:Double?
+    var etaMinutes:Double?
+}
+struct CaptureDestination:Decodable {
+    var lat:Double?
+    var lng:Double?
+    var confidence:Double?
 }
 struct ScreenResult:Decodable {
     var kind:String?
@@ -107,6 +113,7 @@ struct ServerDecision:Decodable {
     var mode:String?
 }
 struct CapturePayload:Decodable {
+    var id:String?
     var ok:Bool?
     var persisted:Bool?
     var updated:Bool?
@@ -118,6 +125,22 @@ struct CapturePayload:Decodable {
     var decision:ServerDecision?
     var reason:String?
     var error:String?
+    var destination:CaptureDestination?
+    var offerKind:String?
+}
+struct CoachAdvice:Decodable {
+    var action:String
+    var reason:String
+    var afterDropoff:String
+    var nextTrigger:String
+    var confidence:Double
+    var assumptions:[String]
+}
+struct CoachPayload:Decodable {
+    var ok:Bool
+    var offerId:String
+    var advice:CoachAdvice
+    var expiresAt:Date
 }
 struct ActionPayload:Decodable {
     var ok:Bool?

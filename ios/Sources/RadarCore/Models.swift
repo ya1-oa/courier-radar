@@ -114,6 +114,7 @@ public struct DeclineEvidence: Codable, Sendable {
     public var isCausal:Bool?
 }
 public struct DispatchSnapshot: Codable, Sendable {
+    public var trainedAt:Date?
     public var version:Int?
     public var offersCaptured:Int?
     public var offersObservedAvailable:Int?
@@ -126,6 +127,7 @@ public struct DispatchSnapshot: Codable, Sendable {
     public var decline:DeclineEvidence?
     public var limitations:[String]?
     public init(pooled:DispatchPooled = .init(),zones:[DispatchZone]=[]) {
+        self.trainedAt=nil
         self.version=5; self.offersCaptured=0;self.offersObservedAvailable=0
         self.verifiedAvailableMinutes=0;self.shiftAvailableMinutes=0
         self.gpsSamples=0;self.completedWindows=0
@@ -158,6 +160,7 @@ public struct RadarOffer: Codable, Identifiable, Sendable {
     public var stackCount:Int?
     public var offerKind:String?
     public var parserConfidence:Double?
+    public var destinationConfidence:Double?
     public var tripETA:Double { etaMinutes ?? radarEtaMinutes ?? 0 }
     public var pickupPoint:GeoPoint? {
         guard let lat, let lng else { return nil }
@@ -176,7 +179,7 @@ public struct RadarOffer: Codable, Identifiable, Sendable {
         self.etaMinutes=etaMinutes;self.state=state;self.capturedAt=capturedAt
         self.lat=lat;self.lng=lng;self.dropoffLat=dropoffLat;self.dropoffLng=dropoffLng
         self.finalPayout=nil;self.radarEtaMinutes=nil;self.dropoffZone=nil;self.zone=nil
-        self.isShop=nil;self.itemCount=nil;self.stackCount=nil;self.offerKind=nil;self.parserConfidence=nil
+        self.isShop=nil;self.itemCount=nil;self.stackCount=nil;self.offerKind=nil;self.parserConfidence=nil;self.destinationConfidence=nil
     }
 }
 public enum RecommendationKind:String,Codable,Sendable {
@@ -211,7 +214,7 @@ public struct DriverPolicy: Codable, Sendable {
     public var batteryMiles:Double?
     public var lastBatteryUpdate:Date?
     public var estimatedSpeedMPH:Double
-    public init(dailyGoal:Double=200,calibrationDay:String="2026-09-29",stopTime:String="01:00",
+    public init(dailyGoal:Double=270,calibrationDay:String="2026-09-29",stopTime:String="01:00",
                 batteryMiles:Double?=nil,lastBatteryUpdate:Date?=nil,estimatedSpeedMPH:Double=11) {
         self.dailyGoal=dailyGoal;self.calibrationDay=calibrationDay;self.stopTime=stopTime
         self.batteryMiles=batteryMiles;self.lastBatteryUpdate=lastBatteryUpdate
@@ -219,3 +222,4 @@ public struct DriverPolicy: Codable, Sendable {
     }
     public func isCalibration(at date:Date) -> Bool { WorkClock.workday(at:date)==calibrationDay }
 }
+

@@ -46,20 +46,30 @@ struct RadarCaptureIntent:LiveActivityIntent {
         }
         do{
             let output:CapturePayload=try await api.post("/api/capture",json:json)
+            let point=(json["lat"] as? Double).flatMap{lat in
+                (json["lng"] as? Double).map{GeoPoint(lat:lat,lng:$0)}
+            }
+            let native:CashDecision?
+            if output.screen?.kind=="offer" {
+                native=await NativeCaptureReview.evaluate(result:output,api:api,policy:policy,
+                    position:point,text:recognizedText,aiEnabled:await config.aiEnabled,
+                    acceptancePercent:await config.acceptancePercent,capturedAt:capturedAt,
+                    plannedWorkHours:await config.plannedWorkHours)
+            }else{native=nil}
             let answer:String
             if output.screen?.kind=="lifecycle" {
                 answer=output.updated == true
                     ? "Radar updated \(output.state ?? "delivery stage")."
                     : "Radar did not advance: \(output.reason ?? "check the order stage")."
             }else{
-                answer="\(output.verdict ?? "CHECK") · \(output.parsed?.merchant ?? "Uber offer") · \(Money.dollars(output.parsed?.payout))"
+                answer="\(native?.kind.rawValue ?? "CHECK") · \(output.parsed?.merchant ?? "Uber offer") · \(Money.dollars(output.parsed?.payout))"
             }
             if output.screen?.kind=="lifecycle" {
                 await RadarDecisionLiveActivity.clear()
             } else if output.screen?.kind=="offer" || output.verdict != nil {
-                let why=output.decision?.reason ?? output.reason ?? "Check the Uber offer before acting."
+                let why=native?.reason ?? "Check the Uber offer before acting."
                 _ = await RadarDecisionLiveActivity.show(
-                    verdict:output.verdict ?? "CHECK",
+                    verdict:native?.kind.rawValue ?? "CHECK",
                     merchant:output.parsed?.merchant ?? "Uber offer",
                     payout:Money.dollars(output.parsed?.payout),
                     reason:why,capturedAt:capturedAt)
@@ -84,3 +94,4 @@ struct RadarAppShortcuts:AppShortcutsProvider {
             shortTitle:"Analyze Uber Text",systemImageName:"text.viewfinder")
     }
 }
+

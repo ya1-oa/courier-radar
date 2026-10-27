@@ -5,7 +5,7 @@ import RadarCore
 
 /// User-triggered screenshot capture for an iPhone Action Button Shortcut.
 /// Shortcut: Take Screenshot -> Analyze Uber Screenshot (pass Screenshot as input).
-/// No continuous access to Uber's screen and no uploaded image.
+/// An image is shared with OpenAI only when the rider enables screenshot review.
 struct RadarImageCaptureIntent:LiveActivityIntent {
     static var title:LocalizedStringResource="Analyze Uber Screenshot"
     static var description=IntentDescription("Recognize an Uber screenshot on-device and return a cash-first TAKE, SKIP, or CHECK decision.")
@@ -52,10 +52,17 @@ struct RadarImageCaptureIntent:LiveActivityIntent {
                     "Radar recorded \(result.state ?? "delivery stage")." :
                     "No stage change: \(result.reason ?? "check Uber first")."
             } else {
-                let why=String((result.decision?.reason ?? result.reason ?? "Verify the Uber offer before acting.").prefix(130))
-                message="\(result.verdict ?? "CHECK") · \(result.parsed?.merchant ?? "Uber offer") · \(Money.dollars(result.parsed?.payout)). \(why)"
+                let point=(payload["lat"] as? Double).flatMap{lat in
+                    (payload["lng"] as? Double).map{GeoPoint(lat:lat,lng:$0)}
+                }
+                let native=await NativeCaptureReview.evaluate(result:result,api:api,policy:policy,
+                    position:point,text:recognized.text,image:image,aiEnabled:await config.aiEnabled,
+                    acceptancePercent:await config.acceptancePercent,capturedAt:capturedAt,
+                    plannedWorkHours:await config.plannedWorkHours)
+                let why=String(native.reason.prefix(240))
+                message="\(native.kind.rawValue) · \(result.parsed?.merchant ?? "Uber offer") · \(Money.dollars(result.parsed?.payout)). \(why)"
                 let displayed=await RadarDecisionLiveActivity.show(
-                    verdict:result.verdict ?? "CHECK",
+                    verdict:native.kind.rawValue,
                     merchant:result.parsed?.merchant ?? "Uber offer",
                     payout:Money.dollars(result.parsed?.payout),
                     reason:why,capturedAt:capturedAt)
@@ -69,3 +76,4 @@ struct RadarImageCaptureIntent:LiveActivityIntent {
         }
     }
 }
+

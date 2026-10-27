@@ -8,14 +8,18 @@ public struct CashPlanner {
     public var history:[RadarOffer]
     public var policy:DriverPolicy
     public var now:Date
+    public var adaptiveContext:AdaptiveContext?
 
     private let stepMinutes = 5.0
     private let maximumHorizon = 720.0
 
-    public init(snapshot:DispatchSnapshot,history:[RadarOffer],policy:DriverPolicy,now:Date=Date()) {
-        self.snapshot=snapshot;self.history=history;self.policy=policy;self.now=now
+    public init(snapshot:DispatchSnapshot,history:[RadarOffer],policy:DriverPolicy,now:Date=Date(),adaptiveContext:AdaptiveContext?=nil) {
+        self.snapshot=snapshot;self.history=history;self.policy=policy;self.now=now;self.adaptiveContext=adaptiveContext
     }
     public func offerDecision(_ offer:RadarOffer,position:GeoPoint?) -> CashDecision {
+        if let adaptiveContext {
+            return AdaptivePlanner(snapshot:snapshot,history:history,policy:policy,context:adaptiveContext,now:now).evaluate(offer,position:position).cashDecision
+        }
         let zone=MarketZone.identify(position ?? offer.pickupPoint),
             block=WorkClock.block(at:now),z=snapshot.estimate(zone:zone,block:block)
         guard let payout=offer.payout,payout.isFinite,payout>0,
@@ -84,6 +88,9 @@ public struct CashPlanner {
     }
 
     public func waitDecision(position:GeoPoint?,active:Bool=false) -> CashDecision {
+        if let adaptiveContext {
+            return AdaptivePlanner(snapshot:snapshot,history:history,policy:policy,context:adaptiveContext,now:now).waitDecision(position:position,active:active)
+        }
         if active { return CashDecision(kind:.active,reason:"Finish the Uber delivery. Re-evaluate your waiting zone after drop-off.") }
         let current=MarketZone.identify(position),block=WorkClock.block(at:now)
         if let battery=policy.batteryMiles,battery<4 {
@@ -203,3 +210,4 @@ private struct MemoPlanner {
         return expected
     }
 }
+

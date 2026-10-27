@@ -36,6 +36,16 @@ struct HomeView:View {
         ZStack(alignment:.top) {
             Map(position:$camera,interactionModes:[.pan,.zoom,.rotate]){
                 UserAnnotation()
+                ForEach(HuntCluster.culver) { cluster in
+                    Annotation(cluster.name,coordinate:CLLocationCoordinate2D(latitude:cluster.point.lat,longitude:cluster.point.lng)) {
+                        VStack(spacing:2) {
+                            Image(systemName:"takeoutbag.and.cup.and.straw.fill")
+                            Text(cluster.name).font(.system(size:9,weight:.bold))
+                        }
+                        .padding(7).foregroundStyle(RadarStyle.amber)
+                        .background(RadarStyle.background.opacity(0.94),in:RoundedRectangle(cornerRadius:9))
+                    }
+                }
                 ForEach(zones) { z in
                     if let coord=z.point {
                         MapCircle(center:CLLocationCoordinate2D(latitude:coord.lat,longitude:coord.lng),radius:520)
@@ -271,15 +281,13 @@ struct HomeView:View {
                     HStack {
                         if (decision.kind == .move || decision.kind == .returning),
                            let name=decision.destination,
-                           let zone=zones.first(where:{$0.zone==name}),
-                           let coord=zone.point {
+                           let coord=HuntCluster.culver.first(where:{$0.name==name})?.point ?? zones.first(where:{$0.zone==name})?.point {
                             Button {
                                 let item=MKMapItem(placemark:MKPlacemark(
                                     coordinate:CLLocationCoordinate2D(latitude:coord.lat,longitude:coord.lng)))
                                 item.name=name
-                                item.openInMaps(launchOptions:[
-                                    MKLaunchOptionsDirectionsModeKey:MKLaunchOptionsDirectionsModeWalking])
-                            } label: {Label("NAVIGATE",systemImage:"arrow.triangle.turn.up.right.diamond.fill")}
+                                item.openInMaps()
+                            } label: {Label("OPEN CLUSTER",systemImage:"arrow.triangle.turn.up.right.diamond.fill")}
                         }
                         Spacer()
                         Button {Task{await store.refresh()}} label:{
@@ -337,23 +345,28 @@ struct HomeView:View {
                               color:decision.kind == .skip && offer.state=="observed" ? RadarStyle.danger : RadarStyle.signal)
                 }
                 if offer.state=="observed" {
+                    let cycle=store.cycleEvaluation(offer)
                     Text(decision.reason)
                         .font(.system(size:11)).foregroundStyle(RadarStyle.subtle)
                         .lineLimit(activeOfferExpanded ? nil:2)
+                    Text(String(format:"Cycle %.0fm · recovery %.0fm · need $%.1f/h",cycle.cycleMinutes,cycle.extraRecoveryMinutes,cycle.requiredGrossHourly))
+                        .font(.system(size:10,weight:.bold)).foregroundStyle(RadarStyle.subtle)
+                    if store.prefs.aiEnabled {
+                        Text(store.aiStatus).font(.system(size:10,weight:.bold)).foregroundStyle(RadarStyle.amber)
+                        if let advice=store.aiAdvice {
+                            Text(advice.reason+" Next: "+advice.nextTrigger)
+                                .font(.system(size:11)).foregroundStyle(RadarStyle.subtle).lineLimit(3)
+                        }
+                    }
                     if let after=decision.afterDelivery {
                         Text("AFTER DROPOFF → "+after.uppercased())
                             .font(.system(size:10,weight:.bold))
                             .foregroundStyle(RadarStyle.signal)
                     }
                     if let drop=offer.dropoffPoint {
-                        let target=zones.max(by:{($0.rate*$0.payout)<($1.rate*$1.payout)})
                         HStack(spacing:8) {
                             Label(offer.dropoffZone ?? MarketZone.identify(drop) ?? "Predicted dropoff",systemImage:"flag.checkered")
-                            if let point=target?.point {
-                                let miles=drop.miles(to:point)
-                                let minutes=Int(ceil(miles/max(3,store.prefs.speedMPH)*60))
-                                Text("RETURN → \(target?.zone ?? "best zone") ~\(minutes)m")
-                            }
+                            Text(cycle.routeBasis)
                         }
                         .font(.system(size:9,weight:.bold))
                         .foregroundStyle(RadarStyle.amber)
@@ -405,3 +418,4 @@ struct HomeView:View {
         }
     }
 }
+

@@ -32,6 +32,7 @@ enum RadarTab:Hashable {case live,history,stats,settings}
     let prefs=LocalPreferences()
     let gps=LocationTracker()
     private var refreshTask:Task<Void,Never>?
+    private var decisionClockTask:Task<Void,Never>?
     private var pingQueue:[LocationPing]=[]
     private var flushing=false
     private var lastDecisionLocationAt:Date = .distantPast
@@ -179,6 +180,12 @@ enum RadarTab:Hashable {case live,history,stats,settings}
     }
     func start() {
         if refreshTask != nil{return}
+        decisionClockTask=Task{[weak self] in
+            while !Task.isCancelled {
+                self?.updateDecisions()
+                try? await Task.sleep(for:.seconds(30))
+            }
+        }
         UNUserNotificationCenter.current().requestAuthorization(options:[.alert,.badge,.sound]){_,_ in}
         refreshTask=Task{[weak self] in
             guard let self else{return}
@@ -189,7 +196,7 @@ enum RadarTab:Hashable {case live,history,stats,settings}
         }
         Task{await self.refresh()}
     }
-    func stop(){refreshTask?.cancel();refreshTask=nil;coachTask?.cancel();marketTask?.cancel();gps.stop()}
+    func stop(){refreshTask?.cancel();refreshTask=nil;decisionClockTask?.cancel();decisionClockTask=nil;coachTask?.cancel();marketTask?.cancel();gps.stop()}
     func refresh() async {
         guard authReady,!isRefreshing else{return}
         isRefreshing=true

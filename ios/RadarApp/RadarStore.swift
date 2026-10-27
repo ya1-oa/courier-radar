@@ -28,6 +28,8 @@ enum RadarTab:Hashable {case live,history,stats,settings}
     @Published var aiStatus="OpenAI off"
     @Published var availableSince:Date?
     @Published var marketSignals:[MarketSignal]=MarketSignalCache.load()
+    @Published var shiftReview:ShiftReviewPayload?
+    @Published var reviewLoading=false
 
     let prefs=LocalPreferences()
     let gps=LocationTracker()
@@ -107,7 +109,8 @@ enum RadarTab:Hashable {case live,history,stats,settings}
             acceptancePercent:prefs.acceptancePercent,
             workingMinutesLeft:min(Double(WorkClock.minutesUntilStop(now:now,clock:prefs.stopTime)),
                 max(1,prefs.plannedWorkHours*60-(stats?.todayOnlineMinutes ?? 0))),
-            earned:verifiedCash,consecutiveSkips:skips,marketSignals:marketSignals)
+            earned:verifiedCash,consecutiveSkips:skips,marketSignals:marketSignals,
+            learnedRateMultipliers:stats?.learning?.multipliers ?? [:])
     }
     func cycleEvaluation(_ offer:RadarOffer)->CycleEvaluation {
         AdaptivePlanner(snapshot:stats?.dispatchModel ?? DispatchSnapshot(),history:offers,
@@ -237,14 +240,27 @@ enum RadarTab:Hashable {case live,history,stats,settings}
         guard !isActing else{return};isActing=true;defer{isActing=false}
         do {
             let api=try endpoint()
-            let _:ShiftPayload=try await api.post("/api/shift",json:["action":"end"])
+            let ended:ShiftPayload=try await api.post("/api/shift",json:["action":"end"])
             shiftActive=false
             gps.stop()
             await RadarDecisionLiveActivity.clear()
             await RadarVoltageReminder.cancel()
             await flushGPS()
             await refresh()
+            await requestReview(shiftId:ended.shift?.id)
         }catch{self.error=error.localizedDescription}
+    }
+    /// Post-shift review: measured breakdown, S–F tier, OpenAI debrief and the day's bounded tuning.
+    func requestReview(shiftId:String?=nil) async {
+        guard !reviewLoading else{return}
+        reviewLoading=true;defer{reviewLoading=false}
+        do {
+            let api=try endpoint()
+            var body:[String:Any]=["action":"review","plannedHours":prefs.plannedWorkHours,"ai":prefs.aiEnabled]
+            if let shiftId{body["shiftId"]=shiftId}
+            shiftReview=try await api.post("/api/shift",json:body)
+            await refresh()
+        }catch{self.error="Shift review unavailable: "+error.localizedDescription}
     }
     func mark(_ state:String="next") async {
         guard !isActing else{return}

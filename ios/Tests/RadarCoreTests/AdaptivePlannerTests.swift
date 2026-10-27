@@ -70,4 +70,16 @@ final class AdaptivePlannerTests:XCTestCase {
         fresh.context.marketSignals[0].capturedAt=now.addingTimeInterval(-1800)
         XCTAssertEqual(fresh.evaluate(offer(),position:home).replacementGrossHourly,original.replacementGrossHourly,accuracy:0.001)
     }
+    func testLearnedZoneRateMultiplierIsAppliedAndBounded(){
+        func eval(_ m:Double?)->CycleEvaluation {
+            AdaptivePlanner(snapshot:DispatchSnapshot(),history:[],
+                policy:DriverPolicy(dailyGoal:270,calibrationDay:"1900-01-01",estimatedSpeedMPH:12),
+                context:AdaptiveContext(acceptancePercent:60,workingMinutesLeft:600,
+                    learnedRateMultipliers:m.map{["Culver City|LUNCH":$0]} ?? [:]),now:now).evaluate(offer(),position:home)
+        }
+        let base=eval(nil),quiet=eval(0.7),busy=eval(1.3)
+        XCTAssertLessThan(quiet.replacementGrossHourly,base.replacementGrossHourly)
+        XCTAssertGreaterThan(busy.replacementGrossHourly,base.replacementGrossHourly)
+        XCTAssertEqual(eval(5).replacementGrossHourly,busy.replacementGrossHourly,accuracy:0.0001)
+    }
 }

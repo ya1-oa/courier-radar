@@ -1,5 +1,9 @@
 import { cors, requireToken, dbConfigured, insert, select, patch, bodyOf } from './_shared.js';
+import coachHandler from '../lib-coach.js';
+import { reviewHandler } from '../lib-review.js';
+// /api/coach is rewritten here (vercel.json) to stay inside the Hobby plan's 12-function limit.
 export default async function handler(req,res){
+ if(req.query?.resource==='coach')return coachHandler(req,res);
  cors(res); if(req.method==='OPTIONS')return res.status(204).end();
  const driverId=requireToken(req,res); if(!driverId)return;
  if(!dbConfigured())return res.status(503).json({error:'Supabase is not configured'});
@@ -22,6 +26,7 @@ export default async function handler(req,res){
    const out=await patch(`shifts?id=eq.${open[0].id}&driver_id=eq.${driverId}`,{ended_at:new Date().toISOString()});
    return res.status(200).json({ok:true,shift:out?.[0]});
   }
+  if(action==='review')return await reviewHandler(req,res,driverId,body);
   return res.status(400).json({error:'Unknown action'});
  }catch(error){return res.status(500).json({error:error.message})}
 }

@@ -23,3 +23,14 @@ alter table public.presence add column if not exists market_cell text;
 create index if not exists offers_market_cell_time_idx on public.offers(market_cell,captured_at desc);
 create index if not exists offers_vehicle_block_idx on public.offers(vehicle,time_block,captured_at desc);
 create index if not exists presence_market_cell_time_idx on public.presence(market_cell,captured_at desc);
+-- Post-shift reviews: one row per LA workday (04:00 cutoff). adjustments holds that day's
+-- bounded zone|block offer-rate nudges; the planner uses the product of the last 30 days.
+create table if not exists public.daily_reviews (
+  driver_id text not null, day date not null, tier text, score integer,
+  metrics jsonb not null default '{}'::jsonb, review jsonb not null default '{}'::jsonb,
+  sessions jsonb not null default '{}'::jsonb, ai jsonb, adjustments jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
+  primary key (driver_id, day)
+);
+-- Server (secret key) access only, like every other Radar table: RLS on, no client policies.
+alter table public.daily_reviews enable row level security;

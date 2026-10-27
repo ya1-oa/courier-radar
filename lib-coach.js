@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import {cors,requireToken,bodyOf} from './_shared.js';
+import {cors,requireToken,bodyOf} from './api/_shared.js';
 
 // This is the SwiftUI app's secret-bearing backend, not a replacement web client.
 // Direct OpenAI Responses API is intentional: the rider requested their own key.

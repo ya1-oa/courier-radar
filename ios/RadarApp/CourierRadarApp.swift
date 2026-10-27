@@ -30,6 +30,19 @@ struct RootTabView:View {
         }
         .toolbarBackground(RadarStyle.surface,for:.tabBar)
         .toolbarBackground(.visible,for:.tabBar)
+        .sheet(isPresented:Binding(
+            get:{store.shiftReview != nil},
+            set:{if !$0{store.shiftReview=nil}}
+        )){
+            if let review=store.shiftReview {ShiftReviewView(payload:review)}
+        }
+        .overlay(alignment:.top){
+            if store.reviewLoading {
+                Label("Reviewing your shift…",systemImage:"sparkles")
+                    .font(.system(size:13,weight:.semibold)).padding(.horizontal,14).padding(.vertical,8)
+                    .background(RadarStyle.surface,in:Capsule()).padding(.top,6)
+            }
+        }
         .alert("Radar",isPresented:Binding(
             get:{store.error != nil},
             set:{if !$0{store.error=nil}}

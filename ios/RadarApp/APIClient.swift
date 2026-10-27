@@ -82,6 +82,7 @@ struct StatsPayload:Decodable {
     var merchantStats:[MerchantIntelligence]?
     var todayCompleted:[CompletedDelivery]?
     var dispatchModel:DispatchSnapshot?
+    var learning:LearningPayload?
 }
 struct FeedPayload:Decodable { let offers:[RadarOffer] }
 struct ShiftPayload:Decodable { var ok:Bool?;var shift:RadarShift?;var resumed:Bool? }

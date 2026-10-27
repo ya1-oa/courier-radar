@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import handler from '../api/coach.js';
+import handler from '../lib-coach.js';
 function response(){return {code:200,payload:null,setHeader(){},status(c){this.code=c;return this;},json(p){this.payload=p;return this;},end(){return this;}};}
 function request(state={algorithm:{action:'TAKE',cycleMinutes:20}}){return {method:'POST',headers:{'x-capture-token':process.env.CAPTURE_TOKEN},body:{offerId:'offer-1',capturedAt:new Date().toISOString(),state}};}
 async function isolated(fn){

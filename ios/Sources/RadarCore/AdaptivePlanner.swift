@@ -46,14 +46,17 @@ public struct AdaptiveContext:Sendable {
     public var routeMinutes:Double?
     public var routeTargetID:String?
     public var marketSignals:[MarketSignal]
+    /// "zone|BLOCK" → offer-rate multiplier learned from daily reviews (server-bounded 0.7–1.3).
+    public var learnedRateMultipliers:[String:Double]
     public init(idleMinutes:Double=0,additionalAvailableMinutes:Double=0,additionalOffers:Int=0,
                 acceptancePercent:Double?=nil,workingMinutesLeft:Double=600,earned:Double=0,
-                consecutiveSkips:Int=0,bicycleRoute:[GeoPoint]=[],routeMinutes:Double?=nil,routeTargetID:String?=nil,marketSignals:[MarketSignal]=[]){
+                consecutiveSkips:Int=0,bicycleRoute:[GeoPoint]=[],routeMinutes:Double?=nil,routeTargetID:String?=nil,marketSignals:[MarketSignal]=[],
+                learnedRateMultipliers:[String:Double]=[:]){
         self.idleMinutes=idleMinutes;self.additionalAvailableMinutes=additionalAvailableMinutes
         self.additionalOffers=additionalOffers;self.acceptancePercent=acceptancePercent
         self.workingMinutesLeft=workingMinutesLeft;self.earned=earned;self.consecutiveSkips=consecutiveSkips
         self.bicycleRoute=bicycleRoute;self.routeMinutes=routeMinutes;self.routeTargetID=routeTargetID
-        self.marketSignals=marketSignals
+        self.marketSignals=marketSignals;self.learnedRateMultipliers=learnedRateMultipliers
     }
 }
 
@@ -127,7 +130,8 @@ public struct AdaptivePlanner {
         let z=snapshot.estimate(zone:zone,block:block),hours=max(0,z.availableMinutes)/60
         let extra=live ? max(0,context.additionalAvailableMinutes)/60:0
         let arrivals=live ? max(0,context.additionalOffers):0
-        let lambda=max(0.1,min(30,(max(0,z.offers)+priorRate(at:p)*0.5+Double(arrivals))/(hours+0.5+extra)))
+        let learned=max(0.7,min(1.3,context.learnedRateMultipliers["\(zone ?? "")|\(block)"] ?? 1))
+        let lambda=max(0.1,min(30,learned*(max(0,z.offers)+priorRate(at:p)*0.5+Double(arrivals))/(hours+0.5+extra)))
         var seen=Set<String>()
         let recent=history.filter{o in
             guard let at=o.capturedAt,at<=now,now.timeIntervalSince(at)<14*86400,

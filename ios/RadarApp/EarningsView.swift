@@ -53,6 +53,17 @@ struct EarningsView:View {
                         .padding(.top,5)
                 }
                 RadarCard {
+                    RadarKicker(text:"Shift review")
+                    if let l=store.stats?.learning,let tier=l.lastTier {
+                        Text("Last review \(l.lastDay ?? ""): tier \(tier) · \(l.lastScore ?? 0)/100 · \(l.multipliers?.count ?? 0) zone rates learned")
+                            .font(.system(size:12)).foregroundStyle(RadarStyle.subtle)
+                    }
+                    RadarActionButton(title:store.reviewLoading ? "Reviewing…":"Review today",systemImage:"sparkles",
+                                      highlighted:true,disabled:store.reviewLoading) {
+                        Task{await store.requestReview()}
+                    }
+                }
+                RadarCard {
                     HStack(spacing:10){
                         RadarMetric(title:"Remaining goal",value:Money.dollars(store.missingFromGoal))
                         RadarMetric(title:"Online minutes",value:"\(Int(store.stats?.todayOnlineMinutes ?? 0))m")

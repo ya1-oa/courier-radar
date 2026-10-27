@@ -91,7 +91,6 @@ struct LatestCapture:Decodable {
     var miles:Double?
     var etaMinutes:Double?
     var confidence:Double?
-    var etaMinutes:Double?
 }
 struct CaptureDestination:Decodable {
     var lat:Double?

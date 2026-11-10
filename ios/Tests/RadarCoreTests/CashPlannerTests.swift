@@ -22,10 +22,10 @@ final class CashPlannerTests:XCTestCase {
         XCTAssertEqual(WorkClock.workday(at:date),"2026-09-29")
         XCTAssertNil(MarketZone.identify(nil))
     }
-    func testCalibrationDoesNotRejectFeasibleLowOffer() {
+    func testCalibrationDoesNotForceAnUnprofitableOffer() {
         let planner=CashPlanner(snapshot:data("Westwood",0.2),
                          history:[],policy:.init(calibrationDay:"2026-09-29"),now:date)
-        XCTAssertEqual(planner.offerDecision(offer(4,1,45),position:westwood).kind,.take)
+        XCTAssertEqual(planner.offerDecision(offer(4,1,45),position:westwood).kind,.skip)
     }
     func testMissingEconomicsMustBeChecked() {
         let planner=CashPlanner(snapshot:data("Westwood",0.1),history:[],
@@ -38,11 +38,11 @@ final class CashPlannerTests:XCTestCase {
         XCTAssertEqual(planner.offerDecision(offer(20,3,25),position:westwood).kind,.check)
         XCTAssertEqual(planner.waitDecision(position:westwood).kind,.wait)
     }
-    func testSparseHistoryDoesNotInventSkipOrMove() {
+    func testSparseHistoryDoesNotOverrideSimpleEconomics() {
         let snapshot=DispatchSnapshot()
         let planner=CashPlanner(snapshot:snapshot,history:[],
                policy:.init(calibrationDay:"2026-09-28"),now:date)
-        XCTAssertEqual(planner.offerDecision(offer(7,2,26),position:westwood).kind,.take)
+        XCTAssertEqual(planner.offerDecision(offer(7,2,26),position:westwood).kind,.skip)
         XCTAssertEqual(planner.waitDecision(position:westwood).kind,.wait)
     }
     func testEmptyBatterySignalsCharge() {
@@ -58,6 +58,6 @@ final class CashPlannerTests:XCTestCase {
     func testNoInventedDeclineCausality() {
         let p=CashPlanner(snapshot:data("Westwood",0.12),history:[],
                policy:.init(calibrationDay:"2026-09-28"),now:date)
-        XCTAssertNotNil(p.offerDecision(offer(),position:westwood).skipValue)
+        XCTAssertNil(p.offerDecision(offer(),position:westwood).skipValue)
     }
 }

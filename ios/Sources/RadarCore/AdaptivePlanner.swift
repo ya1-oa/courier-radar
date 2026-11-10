@@ -179,57 +179,21 @@ public struct AdaptivePlanner {
         return expected+survival*originWait
     }
     public func evaluate(_ offer:RadarOffer,position:GeoPoint?)->CycleEvaluation {
-        func check(_ reason:String)->CycleEvaluation {
-            .init(action:.check,reason:reason,payout:offer.payout ?? 0,deliveryMinutes:0,extraRecoveryMinutes:0,
-                  cycleMinutes:0,cycleGrossHourly:0,replacementGrossHourly:0,minimumPayout:0,expectedWaitMinutes:0,
-                  predictedAcceptance:0.6,requiredGrossHourly:0,idleBudgetMinutes:5,afterDropoff:"Verify destination",
-                  recoveryTarget:nil,rateBasis:"missing input",routeBasis:"none",confidence:0,acceptanceWarning:nil,nextReviewSeconds:15)
-        }
-        guard let price=offer.payout,price.isFinite,price>0,let miles=offer.miles,miles.isFinite,miles>=0,
-              offer.tripETA.isFinite,offer.tripETA>0 else{return check("Verify payout, total minutes and mileage.")}
-        guard let position,position.isValid,let drop=offer.dropoffPoint,drop.isValid else {
-            return check("Capture a current GPS fix and destination pin to price recovery.")
-        }
-        if let confidence=offer.destinationConfidence,confidence<0.75{return check("Street-level destination: verify the drop-off map pin before pricing recovery.")}
-        if offer.offerKind == "addon" {return check("Add-on: verify EXTRA minutes and delay to the first customer.")}
-        if let range=policy.batteryMiles,miles+3>range{return check("Trip exceeds remaining range plus a 3-mile reserve.")}
-        let origin=economics(at:position,live:true),dest=economics(at:drop,live:false)
-        var recovery=max(0,dest.wait-origin.wait),after="STAY near drop-off",target:GeoPoint?=nil,travel=0.0
-        var routeBasis="estimated road factor 1.25; urban e-bike speed"
-        for cluster in clusters() {
-            let backMiles=drop.miles(to:cluster.point)*1.25
-            let back=Self.bikeMinutes(from:drop,to:cluster.point,speed:speed)
-            guard back<=45,policy.batteryMiles.map({miles+backMiles+3<=$0}) ?? true else{continue}
-            let next=economics(at:cluster.point,live:false)
-            var cost=max(0,back+next.wait-origin.wait),usedGeometry=false
-            if context.routeTargetID==cluster.id,let first=context.bicycleRoute.first,
-               let last=context.bicycleRoute.last,first.miles(to:drop)<0.3,last.miles(to:cluster.point)<0.3,
-               let routeWait=corridorNextWait(originWait:next.wait) {
-                cost=max(0,routeWait-origin.wait);usedGeometry=true
-            }
-            if cost<recovery {
-                recovery=cost;after="REDEPLOY to "+cluster.name;target=cluster.point
-                travel=usedGeometry ? (context.routeMinutes ?? back):back
-                if usedGeometry{routeBasis="supplied bicycle geometry + estimated offer interception"}
-            }
-        }
-        let delivery=max(offer.tripETA,miles/speed*60+4),cycle=delivery+recovery
-        let threshold=origin.hourly*cycle/60,surplus=price-threshold
-        var action:RecommendationKind=surplus>=0 ? .take:.skip
-        let ar=context.acceptancePercent
-        let warning=ar.map{$0<=56 ? "Acceptance near guard: favor marginal local jobs; preserve 50% floor.":"Target 60%; exact skip budget needs the rolling exclusive-offer queue."}
-        if let ar,ar<=56,surplus>=(-1),price/cycle*60>=origin.hourly*0.85{action = .take}
-        if policy.isCalibration(at:now){action = .take}
-        if delivery+travel>context.workingMinutesLeft{action = .skip}
+        let math=OfferPolicy.evaluate(offer,cruiseMph:policy.estimatedSpeedMPH,batteryMiles:policy.batteryMiles)
+        // Market replacement value remains diagnostics. It NEVER overrides
+        // the rider's payout per hour and per mile acceptance thresholds.
+        let origin=position.flatMap{ $0.isValid ? economics(at:$0,live:true) : nil }
         let required=max(0,policy.dailyGoal-context.earned)/max(1,context.workingMinutesLeft)*60
-        let reason=String(format:"%@ · $%.2f / %.0f cycle min = $%.1f/h. Replacement $%.1f/h includes waiting. %@.",
-                          action.rawValue,price,cycle,price/cycle*60,origin.hourly,after)
-        return .init(action:action,reason:reason,payout:price,deliveryMinutes:delivery,extraRecoveryMinutes:recovery,
-                     cycleMinutes:cycle,cycleGrossHourly:price/cycle*60,replacementGrossHourly:origin.hourly,
-                     minimumPayout:threshold,expectedWaitMinutes:origin.wait,predictedAcceptance:origin.q,
-                     requiredGrossHourly:required,idleBudgetMinutes:delivery*0.25,afterDropoff:after,recoveryTarget:target,
-                     rateBasis:origin.basis,routeBasis:routeBasis,confidence:origin.confidence,
-                     acceptanceWarning:warning,nextReviewSeconds:30)
+        return .init(action:math.action,reason:math.reason,payout:offer.payout ?? 0,
+                     deliveryMinutes:math.adjustedMinutes,extraRecoveryMinutes:0,
+                     cycleMinutes:math.adjustedMinutes,cycleGrossHourly:math.hourlyGross,
+                     replacementGrossHourly:origin?.hourly ?? 0,minimumPayout:math.minimumPayout,
+                     expectedWaitMinutes:origin?.wait ?? 0,predictedAcceptance:origin?.q ?? 0,
+                     requiredGrossHourly:required,idleBudgetMinutes:math.adjustedMinutes*0.25,
+                     afterDropoff:"Use observed wait-zone data after drop-off",recoveryTarget:nil,
+                     rateBasis:"Uber offer payout, miles and ETA",
+                     routeBasis:"Uber ETA + 10% buffer; 20-22 mph cruising sanity check",
+                     confidence:math.validInput ? 1 : 0,acceptanceWarning:nil,nextReviewSeconds:30)
     }
     public func waitDecision(position:GeoPoint?,active:Bool)->CashDecision {
         if active{return .init(kind:.active,reason:"Finish the delivery; evaluate the next pickup position at drop-off.")}

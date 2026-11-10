@@ -3,9 +3,9 @@
 // labeled estimates, never observations. Pure functions are exported for tests.
 import {select,upsert} from './api/_shared.js';
 
-export const TARGETS={dph:Number(process.env.TARGET_DPH||35),dailyGross:270,utilization:.8,acceptance:.6,acceptanceFloor:.5};
+export const TARGETS={dph:Number(process.env.TARGET_DPH||24),dailyGross:200,utilization:.8,acceptance:.6,acceptanceFloor:.5};
 // Score weights and tier cut-offs are shown in every review so the grade is auditable.
-export const WEIGHTS={dph:.4,gross:.25,utilization:.2,acceptance:.15};
+export const WEIGHTS={dph:.45,gross:.35,utilization:.2,acceptance:0};
 export const TIERS=[['S',90],['A',80],['B',68],['C',55],['D',40],['F',0]];
 // One day may move a zone/block offer-rate multiplier at most ±10%; all days together at most ±30%.
 export const DAY_NUDGE=[.9,1.1],TOTAL_MULTIPLIER=[.7,1.3];

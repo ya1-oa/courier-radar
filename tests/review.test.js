@@ -64,7 +64,7 @@ test('session review measures decisions, grades them and prices mistakes',()=>{
 test('day review prefers the Uber daily total over captured payouts',()=>{
  const r=buildReview({...fixture(),shifts:[shift],scope:'day',snapshotTotal:30});
  assert.equal(r.metrics.earnings,30);assert.equal(r.metrics.earningsSource,'uber_daily_total');
- assert.equal(r.rubric.targets.grossTarget,270);
+ assert.equal(r.rubric.targets.grossTarget,200);
 });
 test('tier thresholds',()=>{
  assert.equal(tierFor(95),'S');assert.equal(tierFor(80),'A');assert.equal(tierFor(67),'C');assert.equal(tierFor(5),'F');

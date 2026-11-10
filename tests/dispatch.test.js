@@ -29,19 +29,27 @@ test('identical OCR copies do not inflate offer count',()=>{
  const m=buildDispatchModel({offers,presence:pings(),shifts:[st],now});
  assert.equal(m.offersCaptured,1);
 });
-test('low-data default accepts guaranteed feasible money',()=>{
+test('low-data history does not force a weak payout into TAKE',()=>{
  const a=decideDispatchOffer({model:base(),offer:{payout:10,miles:3.1,eta_minutes:34,...westwood},position:westwood,now});
- assert.equal(a.verdict,'TAKE');assert.equal(a.mode,'LOW DATA');
+ assert.equal(a.verdict,'SKIP');assert.equal(a.mode,'PAYOUT_ETA_MILES');
 });
-test('calibration collects offers without hour-rate rejection',()=>{
+test('calibration records evidence but never overrides a poor offer',()=>{
  const m=base({zones:[z('Westwood',.2,12)]});
  const a=decideDispatchOffer({model:m,offer:{payout:3,miles:1,eta_minutes:43,...westwood},position:westwood,now,calibration:true});
- assert.equal(a.verdict,'TAKE');assert.equal(a.mode,'CALIBRATION');
+ assert.equal(a.verdict,'SKIP');assert.equal(a.calibrationEvidenceOnly,true);
 });
-test('trained model may reject a weak order for real opportunity cost',()=>{
+test('trained future-cash signal does not override payout threshold',()=>{
  const m=base({zones:[z('Westwood',.2,12)]});
- const a=decideDispatchOffer({model:m,offer:{payout:3,miles:2,eta_minutes:45,...westwood},position:westwood,now,remainingMinutes:120});
- assert.equal(a.verdict,'SKIP');assert.ok(a.skipValue>a.takeValue);
+ const a=decideDispatchOffer({model:m,offer:{payout:3,miles:2,eta_minutes:45,...westwood},position:westwood,now});
+ assert.equal(a.verdict,'SKIP');assert.ok(a.hourlyGross<20);
+});
+test('a good $6 short order is valid and does not require $8 payout',()=>{
+ const a=decideDispatchOffer({model:base(),offer:{payout:6,miles:1.2,eta_minutes:10,...westwood},position:westwood,now});
+ assert.equal(a.verdict,'TAKE');
+});
+test('missing Uber time is CHECK rather than silently using a Radar estimate',()=>{
+ const a=decideDispatchOffer({model:base(),offer:{payout:13,miles:3,radar_eta_minutes:20,...westwood},position:westwood,now});
+ assert.equal(a.verdict,'CHECK');
 });
 test('battery reserve check stops an unsafe order even during calibration',()=>{
  const a=decideDispatchOffer({model:base(),offer:{payout:20,miles:6,eta_minutes:30,...westwood},position:westwood,now,batteryMiles:7,calibration:true});

@@ -61,7 +61,7 @@ export default async function handler(req,res){
       }
     }catch(error){return res.status(500).json({error:error.message,parsed,rate})}
   }
-  const target=Number(settings.target_dph||35),uberRate=parsed.payout>0&&Number(parsed.etaMinutes)>0?{effectiveMinutes:Number(parsed.etaMinutes),dollarsPerHour:Number((parsed.payout/parsed.etaMinutes*60).toFixed(2))}:null,radarRate=parsed.payout>0&&Number.isFinite(radarEtaMinutes)?{effectiveMinutes:Number(radarEtaMinutes.toFixed(1)),dollarsPerHour:Number((parsed.payout/radarEtaMinutes*60).toFixed(2))}:rate,decisionRate=uberRate?.dollarsPerHour??radarRate?.dollarsPerHour,dispatchRows=dbConfigured()?await Promise.all([
+  const target=Number(settings.target_dph||35),uberRate=parsed.payout>0&&Number(parsed.etaMinutes)>0?{effectiveMinutes:Number((parsed.etaMinutes*1.1).toFixed(1)),dollarsPerHour:Number((parsed.payout/(parsed.etaMinutes*1.1)*60).toFixed(2)),bufferPercent:10}:null,radarRate=parsed.payout>0&&Number.isFinite(radarEtaMinutes)?{effectiveMinutes:Number(radarEtaMinutes.toFixed(1)),dollarsPerHour:Number((parsed.payout/radarEtaMinutes*60).toFixed(2))}:rate,decisionRate=uberRate?.dollarsPerHour??radarRate?.dollarsPerHour,dispatchRows=dbConfigured()?await Promise.all([
    select('offers?driver_id=eq.'+driverId+'&order=captured_at.desc&limit=1500&select=*'),
    select('offer_events?driver_id=eq.'+driverId+'&order=captured_at.desc&limit=4000&select=*'),
    select('presence?driver_id=eq.'+driverId+'&order=captured_at.desc&limit=8000&select=*'),
@@ -76,16 +76,17 @@ export default async function handler(req,res){
   stopMinutes=(stopParts[0]||0)*60+(stopParts[1]||0),
   workHorizon=Math.max(10,(stopMinutes>nowMinutes?stopMinutes:stopMinutes+1440)-nowMinutes),
   effectiveBattery=body.batteryMiles??remainingBatteryMiles(policy,dispatchRows?.[0]||[]),
-  decision=decideDispatchOffer({model:learned,offer:row,position:Number.isFinite(lat)&&Number.isFinite(lng)?{lat,lng}:null,now:Date.now(),remainingMinutes:Math.max(10,Math.min(180,Number(body.remainingMinutes)||workHorizon)),batteryMiles:effectiveBattery,dailyEarned:body.dailyEarned??null,dailyTarget:200,calibration:laDate===String(body.calibrationDay||policy.calibrationDay||'2026-09-29')}),
+  decision=decideDispatchOffer({model:learned,offer:row,position:Number.isFinite(lat)&&Number.isFinite(lng)?{lat,lng}:null,now:Date.now(),remainingMinutes:Math.max(10,Math.min(180,Number(body.remainingMinutes)||workHorizon)),batteryMiles:effectiveBattery,dailyEarned:body.dailyEarned??null,dailyTarget:Number(body.dailyTarget)||200,cruiseMph:Number(settings.speed_high_mph)||21,bufferPercent:10,calibration:laDate===String(body.calibrationDay||policy.calibrationDay||'2026-09-29')}),
   verdict=decision.verdict;
   if(dbConfigured()&&saved?.[0]?.id){
    await insert('recommendation_logs',{
     driver_id:driverId,context:'offer_decision',action:verdict,
     zone_type:decision.zone||zone||null,confidence:decision.confidence??0,
     reason:String(decision.reason||'').slice(0,800),time_block:timeBlock,
-    source:'dispatch_v4',origin_lat:Number.isFinite(lat)?lat:null,origin_lng:Number.isFinite(lng)?lng:null,
+    source:'payout_eta_miles_v1',origin_lat:Number.isFinite(lat)?lat:null,origin_lng:Number.isFinite(lng)?lng:null,
     evidence:{offerId:saved[0].id,payout:row.payout,etaMinutes:row.eta_minutes,miles:row.miles,
-     takeValue:decision.takeValue??null,skipValue:decision.skipValue??null,
+     hourlyGross:decision.hourlyGross??null,dollarsPerMile:decision.dollarsPerMile??null,
+      adjustedMinutes:decision.adjustedMinutes??null,minimumPayout:decision.minimumPayout??null,
      confidence:decision.confidence??null,mode:decision.mode,
      afterDelivery:decision.afterDelivery||null,horizonMinutes:decision.horizonMinutes||null,
      capturedAt:row.captured_at}

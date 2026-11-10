@@ -215,7 +215,7 @@ public struct DriverPolicy: Codable, Sendable {
     public var lastBatteryUpdate:Date?
     public var estimatedSpeedMPH:Double
     public init(dailyGoal:Double=270,calibrationDay:String="2026-09-29",stopTime:String="01:00",
-                batteryMiles:Double?=nil,lastBatteryUpdate:Date?=nil,estimatedSpeedMPH:Double=11) {
+                batteryMiles:Double?=nil,lastBatteryUpdate:Date?=nil,estimatedSpeedMPH:Double=21) {
         self.dailyGoal=dailyGoal;self.calibrationDay=calibrationDay;self.stopTime=stopTime
         self.batteryMiles=batteryMiles;self.lastBatteryUpdate=lastBatteryUpdate
         self.estimatedSpeedMPH=estimatedSpeedMPH

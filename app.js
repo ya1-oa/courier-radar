@@ -214,6 +214,22 @@ if($('saveUberToday'))$('saveUberToday').onclick=async()=>{
  try{await api('/api/earnings',{method:'POST',body:JSON.stringify({dailyTotal:v})});await refreshData();if($('uberSyncStatus'))$('uberSyncStatus').textContent='Uber daily total recorded: '+money(v)+'.'}catch(e){if($('uberSyncStatus'))$('uberSyncStatus').textContent='Sync failed: '+e.message}
  finally{$('saveUberToday').disabled=false}
 };
+function renderManualOffer(){
+ if(!$('manualPay'))return;
+ const a=evaluateOffer({payout:$('manualPay').value,miles:$('manualMiles').value,
+  uberMinutes:$('manualEta').value,bufferPercent:Number($('manualBuffer').value),
+  cruiseMph:Number($('manualSpeed').value)});
+ $('manualDecision').textContent=a.tier;
+ $('manualDecision').className='pill '+(a.verdict==='TAKE'?'take':a.verdict==='SKIP'?'skip':'check');
+ $('manualHourly').textContent=a.hourlyGross==null?'—':money(a.hourlyGross);
+ $('manualPerMile').textContent=a.dollarsPerMile==null?'—':money(a.dollarsPerMile);
+ $('manualAdjusted').textContent=a.adjustedMinutes==null?'—':a.adjustedMinutes+'m';
+ $('manualReason').textContent=a.reason;
+}
+for(const id of ['manualPay','manualMiles','manualEta','manualBuffer','manualSpeed']){
+ const el=$(id);if(el){el.addEventListener('input',renderManualOffer);el.addEventListener('change',renderManualOffer)}
+}
+renderManualOffer();
 if($('saveRiderSettings'))$('saveRiderSettings').onclick=()=>saveRiderSettings().then(()=>refreshData()).catch(e=>alert(e.message));document.querySelectorAll('[data-speed-level]').forEach(btn=>btn.onclick=()=>saveRiderSettings({active_speed_level:btn.dataset.speedLevel}).catch(e=>alert(e.message)));if($('nextBtn'))$('nextBtn').onclick=nextOnboard;if($('backBtn'))$('backBtn').onclick=()=>{if(onboardStep>0){onboardStep--;renderOnboard()}};if($('skipBtn'))$('skipBtn').onclick=()=>{localStorage.setItem(ONBOARD_KEY,'1');$('onboarding').classList.add('hidden')};if($('captureEndpoint'))$('captureEndpoint').value=location.origin+'/api/capture';
 if($('copyCaptureEndpoint'))$('copyCaptureEndpoint').onclick=async()=>{
  const url=location.origin+'/api/capture';

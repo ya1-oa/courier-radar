@@ -1,3 +1,4 @@
+import {evaluateOffer} from './lib-offer-policy.js';
 // Radar's dispatch model is a personal, observational approximation, NOT Uber's private algorithm.
 // No merchant-density, fabricated hotspot or anonymous rider-supply data enters this model.
 const DAY=86400000, MIN=60000;
@@ -172,24 +173,28 @@ function destinations(model,offer,homeZone,block,eta,batteryMiles,lookahead){
  }
  return {continuation:best,afterAction:action,destinationZone:destZone,returnMinutes:returnTravel};
 }
-export function decideDispatchOffer({model,offer,position,now=Date.now(),remainingMinutes=120,batteryMiles=null,dailyEarned=0,dailyTarget=200,calibration=false}={}){
- const payout=val(offer?.payout),eta=val(offer?.eta_minutes||offer?.radar_eta_minutes),miles=val(offer?.miles),nowMs=now instanceof Date?now.getTime():Number(now);
- const zone=dispatchZone(position?.lat,position?.lng)||zoneFrom(offer)||null,block=dispatchBlock(nowMs),here=zoneEstimate(model,zone,block),h=clamp(val(remainingMinutes,120),10,180);
- if(!(payout>0&&eta>0&&miles>=0))return {verdict:'CHECK',reason:'Offer price or duration missing. Verify the Uber screen.',zone,mode:calibration?'CALIBRATION':'LEARNING'};
- if(batteryMiles!=null&&Number.isFinite(Number(batteryMiles))&&miles+2>Number(batteryMiles))return {verdict:'CHECK',reason:'Battery range could be insufficient for this trip plus a 2-mile reserve. Charge or verify range.',zone,mode:'BATTERY SAFETY'};
- const rate=cashRate(here),waitValue=futureCash(here,h),after=destinations(model,offer,zone,block,eta,batteryMiles,h);
- const takeValue=payout+after.continuation;
- // The refusal case is counterfactual and thus needs stronger evidence than guaranteed cash.
- const uncertainty=1-val(here.confidence),margin=2.5+Math.min(6,uncertainty*5);
- const declinePenalty=clamp(val(model?.decline?.observedExcessMinutes),0,8)*rate*.35;
- const skipValue=Math.max(0,waitValue-declinePenalty);
- const evidenceOk=val(here.availableMinutes)>=60&&val(here.offers)>=5;
- let verdict='TAKE',reason='';
- if(calibration){reason='Calibration day: bank feasible cash while collecting unbiased dispatch observations.'}
- else if(!evidenceOk){reason='TAKE: local availability evidence is insufficient for a justified SKIP.'}
- else if(skipValue>takeValue+margin){verdict='SKIP';reason='Observed future cash from staying available exceeds this offer plus estimated post-dropoff opportunity.'}
- else reason='TAKE: guaranteed payout plus post-dropoff opportunity beats, or is too close to, the uncertain SKIP alternative.';
- return {verdict,reason,zone,block,mode:calibration?'CALIBRATION':evidenceOk?'LEARNED':'LOW DATA',payout,eta,miles,remainingToTarget:Math.max(0,dailyTarget-dailyEarned-payout),takeValue:+takeValue.toFixed(2),skipValue:+skipValue.toFixed(2),difference:+(takeValue-skipValue).toFixed(2),horizonMinutes:h,afterDelivery:after.afterAction,returnMinutes:+after.returnMinutes.toFixed(1),sampledMinutes:here.availableMinutes,offerSamples:here.offers,confidence:here.confidence,observationalDeclinePenalty:+declinePenalty.toFixed(2)};
+export function decideDispatchOffer({model,offer,position,now=Date.now(),remainingMinutes=120,
+ batteryMiles=null,dailyEarned=0,dailyTarget=200,calibration=false,cruiseMph=21,bufferPercent=10}={}){
+ const nowMs=now instanceof Date?now.getTime():Number(now);
+ const zone=dispatchZone(position?.lat,position?.lng)||zoneFrom(offer)||null;
+ const block=dispatchBlock(nowMs),here=zoneEstimate(model,zone,block);
+ // Do not let sparse observed offers, historical replacement models, calibration days
+ // or guessed future orders override the payout/time/mileage decision.
+ const result=evaluateOffer({
+  payout:offer?.payout,miles:offer?.miles,uberMinutes:offer?.eta_minutes,
+  bufferPercent,cruiseMph,batteryMiles,
+  offerKind:offer?.offer_kind||'single',isShop:Boolean(offer?.is_shop)
+ });
+ const horizon=clamp(val(remainingMinutes,120),10,720);
+ const paid=val(dailyEarned),target=val(dailyTarget,200);
+ return {...result,zone,block,
+  remainingToTarget:+Math.max(0,target-paid-val(offer?.payout)).toFixed(2),
+  requiredDailyHourly:+(Math.max(0,target-paid)/(horizon/60)).toFixed(2),
+  horizonMinutes:horizon,
+  sampledMinutes:val(here.availableMinutes),offerSamples:val(here.offers),
+  confidence:val(here.confidence),
+  afterDelivery:'Review wait-zone evidence after drop-off',
+  calibrationEvidenceOnly:Boolean(calibration)};
 }
 export function decideDispatchWait({model,position,now=Date.now(),remainingMinutes=120,batteryMiles=null,active=false,calibration=false,lastOriginZone=null}={}){
  if(active)return {advice:'ON DELIVERY',reason:'Complete the delivery and capture the drop-off. Then re-evaluate your location.'};

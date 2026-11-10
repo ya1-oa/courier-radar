@@ -17,76 +17,14 @@ public struct CashPlanner {
         self.snapshot=snapshot;self.history=history;self.policy=policy;self.now=now;self.adaptiveContext=adaptiveContext
     }
     public func offerDecision(_ offer:RadarOffer,position:GeoPoint?) -> CashDecision {
-        if let adaptiveContext {
-            return AdaptivePlanner(snapshot:snapshot,history:history,policy:policy,context:adaptiveContext,now:now).evaluate(offer,position:position).cashDecision
-        }
-        let zone=MarketZone.identify(position ?? offer.pickupPoint),
-            block=WorkClock.block(at:now),z=snapshot.estimate(zone:zone,block:block)
-        guard let payout=offer.payout,payout.isFinite,payout>0,
-              let miles=offer.miles,miles.isFinite,miles>=0,
-              offer.tripETA.isFinite,offer.tripETA>0 else {
-            return CashDecision(kind:.check,reason:"Uber payout, time or distance is missing. Verify before deciding.",zone:zone)
-        }
-        if let remaining=policy.batteryMiles,miles+3>remaining {
-            return CashDecision(kind:.check,reason:"Trip exceeds the estimated remaining e-bike range plus a 3-mile reserve. Charge or verify battery.",zone:zone)
-        }
-        if policy.isCalibration(at:now) {
-            return CashDecision(kind:.take,reason:"Calibration day: accept feasible offers and record their real outcomes.",zone:zone)
-        }
-        guard z.availableMinutes>=60,z.offers>=5,z.confidence>=0.30,
-              let zone else {
-            return CashDecision(kind:.take,reason:"Not enough local available-time observations to justify rejecting guaranteed cash.",modelConfidence:z.confidence,zone:zone)
-        }
-
-        // Destination is learned from actual drop-off GPS. No restaurant count enters this function.
-        let destination=MarketZone.identify(offer.dropoffPoint)
-        let predictedDuration=max(5,min(150,offer.tripETA+(offer.isShop == true ? 5 : 0)))
-        let cashTake:Double
-        let cashSkip:Double
-        var afterDelivery:String?
-        var planner=MemoPlanner(snapshot:snapshot,history:history,now:now,
-                                speed:policy.estimatedSpeedMPH,
-                                battery:policy.batteryMiles,horizon:horizonMinutes)
-        let remainingAfter=max(0,horizonMinutes-predictedDuration)
-        let batteryAfter=policy.batteryMiles.map{max(0,$0-miles)}
-        // Unknown drop-off is genuinely unknown; never value it exactly as home.
-        var continuation=planner.cash(zone:destination ?? zone,minutes:remainingAfter,battery:batteryAfter)
-        if destination==nil {
-            continuation *= 0.75
-        }else if let actualDropoff=offer.dropoffPoint,actualDropoff.isValid {
-            // TAKE includes the choice of waiting at drop-off versus returning to a measured zone.
-            // Only use destinations with sufficient personal offer-exposure evidence.
-            let afterBlock=WorkClock.block(at:now.addingTimeInterval(predictedDuration*60))
-            for candidate in snapshot.zones where candidate.block==afterBlock &&
-                candidate.availableMinutes>=60 && candidate.offers>=6 &&
-                candidate.confidence>=0.5 {
-                guard let center=candidate.point else{continue}
-                let backMiles=actualDropoff.miles(to:center)
-                let deadhead=2+backMiles/max(6,policy.estimatedSpeedMPH)*60
-                guard backMiles>=0.25,backMiles<=4.5,deadhead<remainingAfter/3,
-                      batteryAfter.map{$0>=backMiles+4} ?? true else{continue}
-                let afterMove=planner.cash(zone:candidate.zone,minutes:remainingAfter-deadhead,
-                                battery:batteryAfter.map{max(0,$0-backMiles)})
-                let uncertaintyCost=5+9*(1-candidate.confidence)
-                if afterMove-uncertaintyCost>continuation+3 {
-                    continuation=afterMove-uncertaintyCost
-                    afterDelivery=candidate.zone
-                }
-            }
-        }
-        cashTake=payout+continuation
-        cashSkip=planner.cash(zone:zone,minutes:horizonMinutes,battery:policy.batteryMiles)
-        let ambiguity=3+5*(1-z.confidence)
-        // AR effects are observational and confounded with time / location / supply.
-        // We do not assume that Uber secretly penalizes declined offers.
-        if cashSkip > cashTake+ambiguity {
-            return CashDecision(kind:.skip,reason:"Observed local replacement value exceeds the offer plus post-delivery value, after an uncertainty margin.",
-                takeValue:cashTake,skipValue:cashSkip,modelConfidence:z.confidence,zone:zone,destination:destination,afterDelivery:afterDelivery)
-        }
-        return CashDecision(kind:.take,reason:"The payout and estimated post-dropoff value beat an uncertain replacement offer.",
-            takeValue:cashTake,skipValue:cashSkip,modelConfidence:z.confidence,zone:zone,destination:destination,afterDelivery:afterDelivery)
+        // Identical policy to the PWA and capture API. Personal market observations
+        // are used for WAIT/MOVE advice, not as excuses to accept poor orders.
+        let math=OfferPolicy.evaluate(offer,cruiseMph:policy.estimatedSpeedMPH,
+                                      batteryMiles:policy.batteryMiles)
+        let zone=MarketZone.identify(position ?? offer.pickupPoint)
+        return CashDecision(kind:math.action,reason:math.reason,modelConfidence:math.validInput ? 1 : 0,
+                            zone:zone,afterDelivery:"Review actual wait-zone evidence after drop-off")
     }
-
     public func waitDecision(position:GeoPoint?,active:Bool=false) -> CashDecision {
         if let adaptiveContext {
             return AdaptivePlanner(snapshot:snapshot,history:history,policy:policy,context:adaptiveContext,now:now).waitDecision(position:position,active:active)

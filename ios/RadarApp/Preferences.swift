@@ -57,7 +57,7 @@ import RadarCore
         voltageReadings=saved?.voltageReadings ?? []
         voltageRemindersEnabled=saved?.voltageRemindersEnabled ?? false
         batteryUpdatedAt=saved?.batteryUpdatedAt
-        speedMPH=saved?.speedMPH ?? 12
+        speedMPH=saved?.speedMPH ?? 21
         vehicle=saved?.vehicle ?? "ebike"
         aiEnabled=saved?.aiEnabled ?? false
         acceptancePercent=saved?.acceptancePercent

@@ -1,6 +1,6 @@
 import { cors, requireToken, dbConfigured, select, upsert, insert, patch, bodyOf } from './_shared.js';
 
-const defaults={vehicle:'ebike',target_dph:35,speed_low_mph:12,speed_mid_mph:16,speed_high_mph:20,active_speed_level:'high',service_overhead_minutes:4.5,acceptance_rate_current:null,acceptance_rate_floor:30};
+const defaults={vehicle:'ebike',target_dph:35,speed_low_mph:12,speed_mid_mph:16,speed_high_mph:21,active_speed_level:'high',service_overhead_minutes:4.5,acceptance_rate_current:null,acceptance_rate_floor:30};
 
 function clean(body={}){
   const vehicle=['ebike','bike','car'].includes(body.vehicle)?body.vehicle:'ebike';
